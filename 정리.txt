@@ -1,8 +1,58 @@
-StatefulWidget : 상태(state)가 바뀌면 화면을 다시 그림
+w:1440 h:1019 Widget createS5() {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '메뉴1'),
+            Tab(text: '메뉴2'),
+            Tab(text: '메뉴3'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              Container(
+                color: Colors.blue,
+                child: Center(child: Text('메뉴1 페이지')),
+              ),
+              Container(
+                color: Colors.green,
+                child: Center(child: Text('메뉴2 페이지')),
+              ),
+              Container(
+                color: Colors.red,
+                child: Center(child: Text('메뉴3 페이지')),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+]
 
-AnimatedContainer : 속성(크기, 색 등)이 바뀔 때 자동으로 애니메이션 실행
+주용기능 : 화면 상단에 탭 메뉴(메뉴1, 메뉴2, 메뉴3) 표시 ,탭을 누르면 각기 다른 페이지(파란색, 초록색, 빨간색 배경)로 전환됨
 
-setState() : 상태를 변경하고 화면 다시 그리기
+TabBar : 상단 탭 메뉴를 만들 (메뉴1,메뉴2,메뉴3)
 
-onEnd :애니메이션이 끝나면 실행됨
+TabBarView : 탭 선택 시 보여줄 내용(페이지)설정
 
+controller : TabBar와 TabBarView를 연결해 같은 탭이 동작하도록 함
+
+Expanded : 탭 내용이 남은 공간 전체를 차지하도록 함
+
+Container : 각 탭의 배경색과 글씨 내용 지정
+
+코드 흐름 정리 
+1. TabBar → 메뉴 버튼 3개 만들기
+2. TabBarView → 각 메뉴에 맞는 화면(파랑, 초록, 빨강) 만들기
+3. controller로 두 개를 연결 → 탭 클릭 시 화면이 바뀜
+
+
+결과 화면
+[메뉴1] [메뉴2] [메뉴3]
+------------------------
+메뉴1 페이지 (파란 배경)
+→ 메뉴2 클릭 시 초록 화면, 메뉴3 클릭 시 빨강 화면으로 변경
