@@ -1,0 +1,39 @@
+캡슐화 (미적용)
+ class Student {
+   String name = "";
+   int score = 0;
+ }
+
+ void main() {
+   var student = Student();
+   student.name = "홍길동";
+   student.score = 95;
+   print("${student.name}의 점수: ${student.score}");
+
+   student.score = -100;
+   print("${student.name}의 점수: ${student.score}");
+ }
+
+캡슐화 (적용)
+
+class Student {
+  String name = "";
+  int _score = 0;
+
+  int get score => _score;
+
+  void setScore(int value) {
+    if (value >= 0 && value <= 100) {
+      _score = value;
+    } else {
+      print("잘못된 점수입니다!");
+    }
+  }
+}
+
+void main() {
+  var student = Student();
+  student.name = "홍길동";
+  student.setScore(95);
+  print("${student.name}의 점수: ${student.score}");
+}
