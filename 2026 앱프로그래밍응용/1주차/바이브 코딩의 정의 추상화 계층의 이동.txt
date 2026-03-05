@@ -1,0 +1,20 @@
+1. 바이브 코딩의 정의: 추상화 계층의 이동
+전통적인 코딩이 구문(Syntax)과 논리(Logic)를 직접 설계하는 과정이었다면, 바이브 코딩은 자연어로 의도(Intent)와 맥락(Context)을 주입하여 결과물을 생성하는 방식을 의미합니다.
+
+ - Imperative(명령형) → Declarative(선언형)의 극단화: "어떻게(How)" 구현할지 고민하는 대신,
+  "무엇을(What)" 원하는지 LLM에게 전달하고 결과물의 '느낌(Vibe)'이 맞는지 확인하며 반복 수정
+
+- 고수준 추상화: 프로그래밍 언어 자체가 추상화 도구였던 것처럼, 이제는 언어조차 저수준(Low-level)으로 
+   취급하고 자연어를 최상위 인터페이스로 사용합니다.
+
+
+2. 기술적 메커니즘: Iterative Prompt Engineering
+
+- Context Injection: 소스 코드 전체 맥락을 LLM에 주입(Cursor의 @Codebase나 Windsurf의 
+  MCP 등)하여 모델이 프로젝트의 구조를 이해하게 합니다.
+
+- Agentic Workflow: 단순히 코드를 생성하는 것을 넘어, AI 에이전트가 테스트를 실행하고 에러 로
+ 그를 읽어 스스로 수정(Self-healing)하는 과정을 포함합니다.
+
+- Zero-Syntax Dependency: 개발자는 세미콜론이나 메모리 관리에 신경 쓰는 대신, 시스템 디자
+ 인과 비즈니스 로직의 정합성에 집중합니다.
