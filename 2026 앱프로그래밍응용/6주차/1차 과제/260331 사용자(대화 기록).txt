@@ -1,0 +1,491 @@
+● Now I have a clear picture. Let me simplify the timer bars by:
+  1. Reducing CSS (remove stripes, tick marks, big label inside bar)
+  2. Simplifying HTML (remove .timer-markers and .timer-sec-label divs)
+  3. Simplifying JS functions (remove references to removed elements)
+
+● Update(quiz_chapter5.html)
+  ⎿  Added 3 lines, removed 47 lines
+      153      margin-bottom: 16px;
+      154    }
+      155    .timer-track {
+      156 -    position: relative;                                       
+      156      background: var(--track-bg);
+      158 -    border-radius: 10px;                                      
+      159 -    height: 36px;                                             
+      157 +    border-radius: 6px;                                       
+      158 +    height: 10px;                                             
+      159      overflow: hidden;
+      161 -    border: 1px solid var(--track-border);                    
+      160    }
+      161    .timer-bar {
+      162      height: 100%;
+      165 -    border-radius: 10px;                                      
+      163 +    border-radius: 6px;                                       
+      164      background: var(--success);
+      165      transition: width 1s linear, background 0.3s;
+      168 -    position: relative;                                       
+      166    }
+      170 -  .timer-bar::after {                                         
+      171 -    content: '';                                              
+      172 -    position: absolute;                                       
+      173 -    inset: 0;                                                 
+      174 -    background: repeating-linear-gradient(                    
+      175 -      90deg,                                                  
+      176 -      transparent,                                            
+      177 -      transparent 18px,                                       
+      178 -      rgba(0,0,0,0.15) 18px,                                  
+      179 -      rgba(0,0,0,0.15) 20px                                   
+      180 -    );                                                        
+      181 -    border-radius: 10px;                                      
+      182 -  }                                                           
+      183 -  .timer-markers {                                            
+      184 -    position: absolute;                                       
+      185 -    inset: 0;                                                 
+      186 -    display: flex;                                            
+      187 -    justify-content: space-between;                           
+      188 -    align-items: flex-end;                                    
+      189 -    padding: 0 4px 2px;                                       
+      190 -    pointer-events: none;                                     
+      191 -  }                                                           
+      192 -  .timer-markers span {                                       
+      193 -    font-size: 0.65rem;                                       
+      194 -    color: rgba(255,255,255,0.4);                             
+      195 -    width: 16px;                                              
+      196 -    text-align: center;                                       
+      197 -  }                                                           
+      198 -  .timer-sec-label {                                          
+      199 -    position: absolute;                                       
+      200 -    inset: 0;                                                 
+      201 -    display: flex;                                            
+      202 -    align-items: center;                                      
+      203 -    justify-content: center;                                  
+      204 -    font-size: 1rem;                                          
+      205 -    font-weight: 700;                                         
+      206 -    color: #fff;                                              
+      207 -    text-shadow: 0 1px 3px rgba(0,0,0,0.6);                   
+      208 -    pointer-events: none;                                     
+      209 -    letter-spacing: 0.05em;                                   
+      210 -  }                                                           
+      167  
+      168    .question-card {
+      169      background: var(--card);
+
+● Update(quiz_chapter5.html)
+  ⎿  Added 4 lines, removed 10 lines
+      399  
+      400    <!-- 전체/카테고리 모드 전체 시간 제한 바 -->
+      401    <div class="timer-bar-wrap hidden" id="limitBarWrap">
+      402 -    <div style="display:flex;align-items:center;gap:8px;margin
+          --bottom:4px;">                                                
+      402 +    <div style="display:flex;align-items:center;justify-conten
+          +t:space-between;margin-bottom:5px;">                          
+      403        <span style="font-size:0.75rem;color:var(--text-muted);"
+            id="limitBarLabel">⏳ 제한 시간</span>
+      404 -      <span id="limitTimeText" style="font-size:0.85rem;font-w
+          -eight:700;color:var(--warning-text);"></span>                 
+      404 +      <span id="limitTimeText" style="font-size:0.8rem;font-we
+          +ight:700;color:var(--warning-text);"></span>                  
+      405      </div>
+      406      <div class="timer-track">
+      407        <div class="timer-bar" id="limitBar" style="width:100%;"
+           ></div>
+      408 -      <div class="timer-markers" id="limitMarkers"></div>     
+      409 -      <div class="timer-sec-label" id="limitSecBig"></div>    
+      408      </div>
+      409    </div>
+      410  
+      411    <!-- 스피드 모드 문제당 타이머 바 -->
+      412    <div class="timer-bar-wrap hidden" id="timerBarWrap">
+      415 -    <div style="display:flex;align-items:center;gap:8px;margin
+          --bottom:4px;">                                                
+      413 +    <div style="display:flex;align-items:center;justify-conten
+          +t:space-between;margin-bottom:5px;">                          
+      414        <span style="font-size:0.75rem;color:var(--text-muted);"
+           >⏰ 남은 시간</span>
+      417 -      <span id="timerSec" style="font-size:0.85rem;font-weight
+          -:700;color:var(--warning-text);">15초</span>                  
+      415 +      <span id="timerSec" style="font-size:0.8rem;font-weight:
+          +700;color:var(--warning-text);">15초</span>                   
+      416      </div>
+      417      <div class="timer-track">
+      418        <div class="timer-bar" id="timerBar" style="width:100%;"
+           ></div>
+      421 -      <div class="timer-markers">                             
+      422 -        <span>15</span><span>12</span><span>9</span><span>6</s
+          -pan><span>3</span><span>0</span>                              
+      423 -      </div>                                                  
+      424 -      <div class="timer-sec-label" id="timerSecBig">15</div>  
+      419      </div>
+      420    </div>
+      421  
+
+● Update(quiz_chapter5.html)
+  ⎿  Added 1 line, removed 9 lines
+      772    if (label) label.textContent = gameMode === 'full' ? '⏳ 전
+           체 제한 (5분)' : '⏳ 카테고리 제한 (3분)';
+      773  
+      774    const textEl = document.getElementById('limitTimeText');
+      775 -  if (textEl) { textEl.textContent = `남은 시간 ${remStr}`; te
+          -xtEl.style.color = textColor; }                               
+      776 -                                                              
+      777 -  const bigEl = document.getElementById('limitSecBig');       
+      778 -  if (bigEl) {                                                
+      779 -    bigEl.textContent = remStr;                               
+      780 -    bigEl.style.color = isLight ? (pct > 25 ? 'rgba(0,0,0,0.6)
+          -' : 'var(--danger)') : 'rgba(255,255,255,0.85)';              
+      781 -    bigEl.style.fontSize = pct <= 25 ? '1.1rem' : '0.95rem';  
+      782 -    bigEl.style.textShadow = pct <= 25 ? `0 0 8px ${barColor}`
+          - : '0 1px 3px rgba(0,0,0,0.5)';                               
+      783 -  }                                                           
+      775 +  if (textEl) { textEl.textContent = remStr; textEl.style.colo
+          +r = textColor; }                                              
+      776  }
+      777  
+      778  function updateTimerBar(t, max) {
+
+● Update(quiz_chapter5.html)
+  ⎿  Added 1 line, removed 16 lines
+      779    const pct = (t / max) * 100;
+      780    const isLight = document.documentElement.getAttribute('data-
+           theme') === 'light';
+      781    const barColor = pct > 50 ? 'var(--success)' : pct > 25 ? 'v
+           ar(--warning)' : 'var(--danger)';
+      782 -  const textColor = isLight                                   
+      783 -    ? (pct > 25 ? '#1A1A2E' : 'var(--danger)')                
+      784 -    : barColor;                                               
+      782 +  const textColor = isLight ? (pct > 25 ? '#1A1A2E' : 'var(--d
+          +anger)') : barColor;                                          
+      783  
+      784    const bar = document.getElementById('timerBar');
+      785    bar.style.width = pct + '%';
+     ...
+      787  
+      788    const secEl = document.getElementById('timerSec');
+      789    if (secEl) { secEl.textContent = t + '초'; secEl.style.color
+            = textColor; }
+      792 -                                                              
+      793 -  const bigEl = document.getElementById('timerSecBig');       
+      794 -  if (bigEl) {                                                
+      795 -    bigEl.textContent = t;                                    
+      796 -    bigEl.style.color = pct <= 25 ? '#fff' : 'rgba(255,255,255
+          -,0.85)';                                                      
+      797 -    if (t <= 5) {                                             
+      798 -      bigEl.style.fontSize = '1.3rem';                        
+      799 -      bigEl.style.textShadow = `0 0 8px ${barColor}`;         
+      800 -    } else {                                                  
+      801 -      bigEl.style.fontSize = '1rem';                          
+      802 -      bigEl.style.textShadow = '0 1px 3px rgba(0,0,0,0.6)';   
+      803 -    }                                                         
+      804 -  }                                                           
+      790  }
+      791  
+      792  function forceTimeOut() {
+
+● 완료했습니다. 세 가지 변경사항:
+
+  1. CSS — 막대기 높이를 36px → 10px로 줄이고, 줄무늬(::after), 눈금
+  표시(.timer-markers), 안에 숫자(.timer-sec-label) CSS 모두 제거
+  2. HTML — 두 바(limitBarWrap, timerBarWrap) 모두 .timer-markers와
+  .timer-sec-label 요소 제거. 라벨과 남은 시간 텍스트는 바 위에 깔끔하게 양쪽
+  정렬로 유지
+  3. JS — updateLimitBar()와 updateTimerBar() 함수에서 제거된 요소(limitSecBig,
+  timerSecBig) 관련 코드 정리
+
+  이제 세 모드 모두 얇고 심플한 막대기에 색상 변화(초록→노랑→빨강)만 표시됩니다.
+
+✻ Brewed for 2m 25s
+
+> C:\Users\403-5\quiz_chapter5_PRD.md 이 파일에서 지금까지 수정한거 최신화 해줘 
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 1 line, removed 1 line
+       4  **참고 도서**: 혼자 공부하는 바이브 코딩 with 클로드 코드 — Cha
+          pter 5  
+       5  **작성일**: 2026-03-31  
+       6  **최종 수정일**: 2026-03-31  
+       7 -**버전**: 2.4                                                  
+       7 +**버전**: 2.5                                                  
+       8  
+       9  ---
+      10  
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 1 line
+      21  | 2.2 | 2026-03-31 | 라이트 테마 배경색 연한 회색(`#F2F2F2`)으
+          로 변경 (F-25 수정) |
+      22  | 2.3 | 2026-03-31 | 라이트 테마 배경색 회색(`#D0D0D0`)으로 변
+          경 (F-25 수정) |
+      23  | 2.4 | 2026-03-31 | 스피드 퀴즈 문제 수 20→10문제 변경(F-03 수
+          정), 타이머 버그 수정(BUG-01) |
+      24 +| 2.5 | 2026-03-31 | 전체·카테고리·스피드 3모드 타이머 바 심플 
+         +화 — 높이 10px, 줄무늬·눈금·내부 숫자·발광 효과 제거 (F-14, F-2
+         +9 수정) |                                                      
+      25  
+      26  ---
+      27  
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 1 line, removed 2 lines
+      77  | ID | 요구사항 |
+      78  |----|----------|
+      79  | F-13 | 게임 전체 경과 시간을 `분:초` 형식으로 헤더에 실시간 
+          표시 (전 모드 공통) |
+      80 -| F-14 | 스피드 모드: 높이 36px의 시각적 타이머 바에 눈금(15·12
+         -·9·6·3·0초)과 남은 초 숫자를 바 내부에 표시 |                  
+      80 +| F-14 | 스피드 모드: 높이 10px의 심플한 타이머 바 + 바 위에 " 
+         +남은 시간 N초" 텍스트 표시 |                                   
+      81  | F-15 | 모든 타이머 바 색상: 50% 이상 초록 → 25% 이상 노랑 → 
+          그 이하 빨강 |
+      82 -| F-15-1 | 스피드 모드: 남은 시간 5초 이하 시 바 내부 숫자가 확
+         -대(1.3rem)되고 발광 효과 적용 |                                
+      82  
+      83  ### 2.8 모드별 전체 제한 시간 🆕
+      84  
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 1 line, removed 1 line
+      86  |----|----------|
+      87  | F-27 | 전체 도전 모드: 게임 시작 후 10분 초과 시 "⏰ 시간 초
+          과!" 알림 표시 후 메인 메뉴로 이동, 진행 데이터 삭제 |
+      88  | F-28 | 카테고리 도전 모드: 게임 시작 후 5분 초과 시 "❌ 실패!
+          " 알림 표시 후 메인 메뉴로 이동, 진행 데이터 삭제 |
+      89 -| F-29 | 전체·카테고리 모드: 게임 화면 상단에 제한 시간 진행 바
+         - 표시 — 높이 36px, 남은 시간을 `분:초`로 바 내부에 표시, 자동  
+         -눈금 생성(6등분), 색상 변화 적용 |                             
+      89 +| F-29 | 전체·카테고리 모드: 게임 화면 상단에 제한 시간 진행 바
+         + 표시 — 높이 10px 심플 바, 바 위에 모드명과 남은 `분:초` 텍스트
+         + 표시, 색상 변화 적용 |                                        
+      90  
+      91  ### 2.5 결과 및 리더보드
+      92  
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 2 lines, removed 2 lines
+      143  
+      144  [게임 화면]
+      145    ├── 상단 헤더: 진행도 / 점수 / 힌트 / 콤보 / 경과시간(분:초)
+      146 -  ├── 전체·카테고리 모드 제한 시간 바 (36px, 남은 분:초 표시, 
+          -자동 눈금, 색상 변화)                                         
+      147 -  ├── 스피드 모드 문제당 타이머 바 (36px, 눈금·내부 숫자·발광 
+          -효과)                                                         
+      146 +  ├── 전체·카테고리 모드 제한 시간 바 (10px 심플 바, 위에 모드
+          +명·남은 분:초 표시, 색상 변화)                                
+      147 +  ├── 스피드 모드 문제당 타이머 바 (10px 심플 바, 위에 남은 초
+          + 텍스트 표시, 색상 변화)                                      
+      148    ├── 콤보 팝업
+      149    ├── 문제 카드: 카테고리 · 문제 번호 · 문제 · 4지선다
+      150    ├── 정답/오답 피드백 바 (오답 시 해설 포함)
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 4 lines, removed 4 lines
+      263  
+      264  | 항목 | 내용 |
+      265  |------|------|
+      266 -| 결과물 | 경과 시간 헤더 표시 + 스피드 모드 시각적 타이머 바 
+          -+ 전체·카테고리 모드 제한 시간 바 |                           
+      267 -| 핵심 변화 | 6px 얇은 바 → 36px 바에 눈금·내부 숫자·발광 효과
+          -, 전체/카테고리 모드 제한 바 신규 추가 |                      
+      268 -| 제한 시간 | 전체 모드 10분 초과 → "⏰ 시간 초과!" / 카테고리
+          - 모드 5분 초과 → "❌ 실패!" |                                 
+      269 -| 추가 항목 | F-13, F-14, F-15, F-15-1, F-27, F-28, F-29 |    
+      266 +| 결과물 | 경과 시간 헤더 표시 + 스피드 모드 타이머 바 + 전체·
+          +카테고리 모드 제한 시간 바 (v2.5에서 심플화) |                
+      267 +| 핵심 변화 | 심플 10px 바 + 바 위 텍스트 라벨, 전체/카테고리 
+          +모드 제한 바 신규 추가 |                                      
+      268 +| 제한 시간 | 전체 모드 5분 초과 → "⏰ 시간 초과!" / 카테고리 
+          +모드 3분 초과 → "❌ 실패!" |                                  
+      269 +| 추가 항목 | F-13, F-14, F-15, F-27, F-28, F-29 |            
+      270  
+      271  **클로드 지시 사항**
+      272  ```
+
+● PRD를 버전 2.5로 최신화 완료했습니다. 변경된 항목:
+
+  - 버전: 2.4 → 2.5
+  - 변경 이력: 2.5 행 추가 (타이머 바 심플화)
+  - F-14: 36px 눈금·내부 숫자 → 10px 심플 바 + 위에 텍스트
+  - F-15-1: 삭제 (발광 효과 제거됨)
+  - F-29: 36px 자동 눈금 바 → 10px 심플 바 + 위에 텍스트
+  - 4. 화면 구성: 두 타이머 바 설명 모두 수정
+  - STEP 2 표: 핵심 변화·제한 시간 수정 (5분/3분으로 정정, F-15-1 제거)
+
+✻ Baked for 52s
+
+> 기능 수정 및 기능 추가 가 완변하게 되었는지 다시 한번 확인해줘                
+
+  Read 1 file (ctrl+o to expand)
+
+● 문제를 발견했습니다. 두 군데 버그가 있습니다:
+
+  1. loadGameState()의 limitMap이 옛날 값 { full: 600, category: 300 }
+  (10분/5분) 으로 되어있어 startGame()의 300/180 (5분/3분)과 불일치
+  2. startGame()과 loadGameState() 둘 다 삭제된 id="limitMarkers" 요소를
+  참조하는 코드가 남아있어 JS 에러 발생 가능
+
+● Update(quiz_chapter5.html)
+  ⎿  Removed 12 lines
+      656    const limitWrap = document.getElementById('limitBarWrap');
+      657    if (totalLimit) {
+      658      limitWrap.classList.remove('hidden');
+      659 -    // 눈금 생성                                              
+      660 -    const markers = document.getElementById('limitMarkers');  
+      661 -    markers.innerHTML = '';                                   
+      662 -    const steps = 6;                                          
+      663 -    for (let i = 0; i <= steps; i++) {                        
+      664 -      const sec = Math.round(totalLimit - (totalLimit / steps)
+          - * i);                                                        
+      665 -      const span = document.createElement('span');            
+      666 -      const min = Math.floor(sec / 60);                       
+      667 -      const s = sec % 60;                                     
+      668 -      span.textContent = s === 0 ? `${min}분` : `${min}:${Stri
+          -ng(s).padStart(2,'0')}`;                                      
+      669 -      markers.appendChild(span);                              
+      670 -    }                                                         
+      659      updateLimitBar(0, totalLimit);
+      660    } else {
+      661      limitWrap.classList.add('hidden');
+
+● Update(quiz_chapter5.html)  ⎿  Added 1 line, removed 12 lines
+      1029      hintsLeft    = s.hintsLeft;
+      1030      elapsedSeconds = s.elapsedSeconds || 0;
+      1031  
+      1032 -    const limitMap = { full: 600, category: 300 };           
+      1032 +    const limitMap = { full: 300, category: 180 };           
+      1033      const totalLimit = limitMap[gameMode] || null;
+      1034  
+      1035      clearInterval(elapsedInterval);
+     ...
+      1056      const limitWrap = document.getElementById('limitBarWrap')
+            ;
+      1057      if (totalLimit) {
+      1058        limitWrap.classList.remove('hidden');
+      1059 -      const markers = document.getElementById('limitMarkers')
+           -;                                                            
+      1060 -      markers.innerHTML = '';                                
+      1061 -      const steps = 6;                                       
+      1062 -      for (let i = 0; i <= steps; i++) {                     
+      1063 -        const sec = Math.round(totalLimit - (totalLimit / ste
+           -ps) * i);                                                    
+      1064 -        const span = document.createElement('span');         
+      1065 -        const min = Math.floor(sec / 60);                    
+      1066 -        const ss = sec % 60;                                 
+      1067 -        span.textContent = ss === 0 ? `${min}분` : `${min}:${
+           -String(ss).padStart(2,'0')}`;                                
+      1068 -        markers.appendChild(span);                           
+      1069 -      }                                                      
+      1059        updateLimitBar(elapsedSeconds, totalLimit);
+      1060      } else {
+      1061        limitWrap.classList.add('hidden');
+
+● 전체 점검 결과입니다:
+
+  확인 완료 항목 (정상)
+
+  ┌────────────────────────────────────────────────────┬──────┐
+  │                        항목                        │ 상태 │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 타이머 바 심플화 (10px, 줄무늬/눈금/내부숫자 제거) │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 전체 모드: 20문제, 5분 제한                        │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 카테고리 모드: 3분 제한                            │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 스피드 모드: 10문제, 문제당 15초                   │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 다크/라이트 테마 토글 + localStorage 저장          │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 라이트 모드 노란 텍스트 → 검정 (--warning-text)    │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 오답 시 정답 + 해설 표시                           │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 게임 상태 localStorage 저장/복구                   │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 리더보드 TOP 10 + 초기화                           │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ XSS 방지 (escHtml)                                 │ ✅   │
+  ├────────────────────────────────────────────────────┼──────┤
+  │ 스피드 모드 타이머 버그 수정 (BUG-01)              │ ✅   │
+  └────────────────────────────────────────────────────┴──────┘
+
+  이번 점검에서 추가 수정한 버그 2건
+
+  ┌───────────────────────────┬─────────────────────────────────────────────┐
+  │           버그            │                    내용                     │
+  ├───────────────────────────┼─────────────────────────────────────────────┤
+  │ loadGameState() 제한 시간 │ { full: 600, category: 300 } → { full: 300, │
+  │  불일치                   │  category: 180 } 수정                       │
+  ├───────────────────────────┼─────────────────────────────────────────────┤
+  │ 삭제된 limitMarkers 참조  │ startGame(), loadGameState() 두 곳 모두     │
+  │                           │ null 참조 코드 제거                         │
+  └───────────────────────────┴─────────────────────────────────────────────┘
+
+✻ Brewed for 1m 1s
+
+> /doctor 
+  ⎿  Claude Code diagnostics dismissed
+
+> /effort                                                                       
+  ⎿  Effort level: auto (currently medium)
+
+> C:\Users\403-5\quiz_chapter5_PRD.md 이 파일에서 지금까지 수정한거 최신화 해줘 
+
+  Read 1 file (ctrl+o to expand)
+
+● 이전 점검에서 발견한 버그 2건을 버그 이력에 추가하고, 버전을 2.6으로 올립니다.
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 1 line, removed 1 line
+       4  **참고 도서**: 혼자 공부하는 바이브 코딩 with 클로드 코드 — Cha
+          pter 5  
+       5  **작성일**: 2026-03-31  
+       6  **최종 수정일**: 2026-03-31  
+       7 -**버전**: 2.5                                                  
+       7 +**버전**: 2.6                                                  
+       8  
+       9  ---
+      10  
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 1 line
+      22  | 2.3 | 2026-03-31 | 라이트 테마 배경색 회색(`#D0D0D0`)으로 변
+          경 (F-25 수정) |
+      23  | 2.4 | 2026-03-31 | 스피드 퀴즈 문제 수 20→10문제 변경(F-03 수
+          정), 타이머 버그 수정(BUG-01) |
+      24  | 2.5 | 2026-03-31 | 전체·카테고리·스피드 3모드 타이머 바 심플
+          화 — 높이 10px, 줄무늬·눈금·내부 숫자·발광 효과 제거 (F-14, F-2
+          9 수정) |
+      25 +| 2.6 | 2026-03-31 | 전체 기능 점검 중 버그 2건 수정 (BUG-02, B
+         +UG-03) |                                                       
+      26  
+      27  ---
+      28  
+
+● Update(quiz_chapter5_PRD.md)
+  ⎿  Added 2 lines
+      357  | ID | 발견 버전 | 수정 버전 | 증상 | 원인 | 수정 내용 |
+      358  |----|-----------|-----------|------|------|-----------|
+      359  | BUG-01 | 2.3 | 2.4 | 스피드 모드에서 15초 경과 후 시간 초과 
+           처리 안 됨 | `updateTimerBar()` 내 미정의 변수 `color` 참조로 
+           JS 에러 발생 → 타이머 인터벌 중단 | `color` → `barColor`로 수
+           정 |
+      360 +| BUG-02 | 2.5 | 2.6 | 새로고침 후 이어하기 시 제한 시간이 5분
+          +/3분이 아닌 10분/5분으로 적용됨 | `loadGameState()`의 `limitMa
+          +p`이 `{ full: 600, category: 300 }`으로 구버전 값 그대로였음 |
+          + `{ full: 300, category: 180 }`으로 수정하여 `startGame()`과  
+          +일치 |                                                        
+      361 +| BUG-03 | 2.5 | 2.6 | 게임 시작 및 이어하기 시 JS 에러 발생  
+          +가능 | 타이머 바 심플화로 삭제된 `id="limitMarkers"` 요소를 `s
+          +tartGame()`·`loadGameState()` 두 곳에서 여전히 참조 | 두 함수 
+          +모두에서 `limitMarkers` 관련 눈금 생성 코드 제거 |            
+      362  
+      363  ---
+      364  
+
+● PRD 버전 2.6으로 최신화 완료했습니다.
+
+  추가된 내용:
+  - 버전 2.6 변경 이력 행 추가
+  - BUG-02: 이어하기 시 제한 시간 불일치 (loadGameState 구버전 값 수정)
+  - BUG-03: 삭제된 limitMarkers 요소 참조로 인한 JS 에러 가능성 수정
