@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교통비 계산기</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fb;
+      min-height: 100vh;
+      padding: 32px 16px;
+      color: #1a1a2e;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .layout {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    .card h2 {
+      font-size: 15px;
+      color: #555;
+      margin-bottom: 18px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafafa;
+    }
+
+    input:focus, select:focus { border-color: #6366f1; background: white; }
+
+    .preset-btns {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      background: #f0f0ff;
+      border: 1.5px solid #d0d0ff;
+      color: #6366f1;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover { background: #6366f1; color: white; border-color: #6366f1; }
+
+    .discount-box {
+      background: #f8f8ff;
+      border: 1.5px solid #e0e0ff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .discount-box label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .discount-box input[type=checkbox] {
+      width: auto;
+      cursor: pointer;
+      accent-color: #6366f1;
+    }
+
+    .kpass-options {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .kpass-options.show { display: block; }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #555;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    .radio-group input[type=radio] {
+      width: auto;
+      accent-color: #6366f1;
+    }
+
+    .calc-btn {
+      width: 100%;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .calc-btn:hover { background: #4f46e5; }
+
+    .results { display: none; }
+    .results.show { display: block; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .result-item {
+      background: #f8f8ff;
+      border: 1.5px solid #e0e0ff;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .result-item .label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .result-item .value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #6366f1;
+    }
+
+    .result-item .sub {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    .result-item.highlight {
+      background: #6366f1;
+      border-color: #6366f1;
+    }
+
+    .result-item.highlight .label { color: rgba(255,255,255,0.7); }
+    .result-item.highlight .value { color: white; }
+    .result-item.highlight .sub { color: rgba(255,255,255,0.6); }
+
+    .savings-banner {
+      background: #ecfdf5;
+      border: 1.5px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #065f46;
+      display: none;
+    }
+
+    .savings-banner.show { display: block; }
+    .savings-banner strong { font-size: 16px; }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+      margin-bottom: 16px;
+    }
+
+    .chart-wrap2 {
+      position: relative;
+      height: 200px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🚌 교통비 계산기</h1>
+<p class="subtitle">K-패스 할인 포함 · 월/학기 교통비 시각화</p>
+
+<div class="layout">
+
+  <!-- 입력 카드 -->
+  <div class="card">
+    <h2>입력</h2>
+
+    <p style="font-size:12px;color:#aaa;margin-bottom:10px;">자주 쓰는 요금 빠르게 선택</p>
+    <div class="preset-btns">
+      <button class="preset-btn" onclick="setPreset(1400)">시내버스 1,400원</button>
+      <button class="preset-btn" onclick="setPreset(1600)">간선버스 1,600원</button>
+      <button class="preset-btn" onclick="setPreset(1500)">지하철 1,500원</button>
+      <button class="preset-btn" onclick="setPreset(2000)">광역버스 2,000원</button>
+    </div>
+
+    <div class="field">
+      <label>1회 요금 (원)</label>
+      <input type="number" id="fare" value="1400" min="0" step="100">
+    </div>
+
+    <div class="field">
+      <label>하루 이용 횟수</label>
+      <input type="number" id="dailyCount" value="4" min="1" max="20">
+    </div>
+
+    <div class="field">
+      <label>한 달 등교일 / 이동일</label>
+      <input type="number" id="daysPerMonth" value="22" min="1" max="31">
+    </div>
+
+    <div class="field">
+      <label>한 학기 주 수 (15주 기본)</label>
+      <input type="number" id="semesterWeeks" value="15" min="1" max="30">
+    </div>
+
+    <!-- K-패스 할인 -->
+    <div class="discount-box">
+      <label>
+        <input type="checkbox" id="kpassCheck" onchange="toggleKpass()">
+        K-패스 할인 적용
+      </label>
+
+      <div class="kpass-options" id="kpassOptions">
+        <div style="font-size:11px;color:#888;margin-top:8px;">
+          월 15회 이상 이용 시 적용 · 초과분부터 소급 환급
+        </div>
+        <div class="radio-group">
+          <label><input type="radio" name="kpassType" value="0.20" checked> 일반 (20% 환급)</label>
+          <label><input type="radio" name="kpassType" value="0.30"> 청년 만 19~34세 (30% 환급)</label>
+          <label><input type="radio" name="kpassType" value="0.53"> 저소득층 (53% 환급)</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">계산하기</button>
+  </div>
+
+  <!-- 결과 카드 -->
+  <div class="card results" id="results">
+    <h2>결과</h2>
+
+    <div class="result-grid" id="resultGrid"></div>
+
+    <div class="savings-banner" id="savingsBanner"></div>
+
+    <div class="section-title">월별 비교</div>
+    <div class="chart-wrap">
+      <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="section-title">비용 구성</div>
+    <div class="chart-wrap2">
+      <canvas id="pieChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let barChartInstance = null;
+  let pieChartInstance = null;
+
+  function setPreset(fare) {
+    document.getElementById('fare').value = fare;
+  }
+
+  function toggleKpass() {
+    const checked = document.getElementById('kpassCheck').checked;
+    document.getElementById('kpassOptions').classList.toggle('show', checked);
+  }
+
+  function fmt(n) {
+    return n.toLocaleString('ko-KR') + '원';
+  }
+
+  function calculate() {
+    const fare = parseInt(document.getElementById('fare').value) || 0;
+    const daily = parseInt(document.getElementById('dailyCount').value) || 0;
+    const days = parseInt(document.getElementById('daysPerMonth').value) || 22;
+    const weeks = parseInt(document.getElementById('semesterWeeks').value) || 15;
+    const kpassOn = document.getElementById('kpassCheck').checked;
+    const kpassRate = parseFloat(document.querySelector('input[name=kpassType]:checked').value);
+
+    // 기본 계산
+    const monthlyTrips = daily * days;
+    const monthlyRaw = fare * monthlyTrips;
+
+    // 한 학기 = weeks주 × 평균 이동일(일 5일 기준이지만 사용자 입력 days/22*5 근사)
+    const semesterDays = Math.round(weeks * (days / (days > 15 ? 4.4 : 3)));
+    const semesterRaw = fare * daily * semesterDays;
+
+    // K-패스 환급
+    let monthlyDiscount = 0;
+    let semesterDiscount = 0;
+
+    if (kpassOn && monthlyTrips >= 15) {
+      monthlyDiscount = Math.round(monthlyRaw * kpassRate);
+    }
+
+    if (kpassOn) {
+      const semesterMonths = weeks / 4.33;
+      semesterDiscount = Math.round(monthlyDiscount * semesterMonths);
+    }
+
+    const monthlyNet = monthlyRaw - monthlyDiscount;
+    const semesterNet = semesterRaw - semesterDiscount;
+    const yearNet = monthlyNet * 12;
+
+    // 결과 카드
+    const grid = document.getElementById('resultGrid');
+    grid.innerHTML = `
+      <div class="result-item">
+        <div class="label">월 이용 횟수</div>
+        <div class="value">${monthlyTrips.toLocaleString()}<span style="font-size:14px;font-weight:400">회</span></div>
+        <div class="sub">하루 ${daily}회 × ${days}일</div>
+      </div>
+      <div class="result-item">
+        <div class="label">월 교통비 (원금)</div>
+        <div class="value" style="font-size:18px">${fmt(monthlyRaw)}</div>
+        <div class="sub">할인 전</div>
+      </div>
+      <div class="result-item highlight">
+        <div class="label">월 실제 부담</div>
+        <div class="value">${fmt(monthlyNet)}</div>
+        <div class="sub">${kpassOn ? `K-패스 ${fmt(monthlyDiscount)} 환급` : '할인 미적용'}</div>
+      </div>
+      <div class="result-item highlight">
+        <div class="label">한 학기 예상</div>
+        <div class="value" style="font-size:18px">${fmt(semesterNet)}</div>
+        <div class="sub">${weeks}주 기준</div>
+      </div>
+    `;
+
+    // 절약 배너
+    const banner = document.getElementById('savingsBanner');
+    if (kpassOn && monthlyDiscount > 0) {
+      const yearSaving = monthlyDiscount * 12;
+      banner.innerHTML = `💰 K-패스로 월 <strong>${fmt(monthlyDiscount)}</strong> 절약 · 연간 <strong>${fmt(yearSaving)}</strong> 환급 예상`;
+      banner.classList.add('show');
+    } else if (kpassOn && monthlyTrips < 15) {
+      banner.innerHTML = `⚠️ K-패스는 월 15회 이상부터 적용됩니다. 현재 ${monthlyTrips}회로 미적용.`;
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+
+    // 결과 카드 표시
+    document.getElementById('results').classList.add('show');
+
+    // 바 차트: 월/학기/연간 비교
+    const labels = ['월 원금', '월 실부담', '학기 원금', '학기 실부담'];
+    const values = [monthlyRaw, monthlyNet, semesterRaw, semesterNet];
+    const colors = ['#cbd5e1', '#6366f1', '#cbd5e1', '#818cf8'];
+
+    if (barChartInstance) barChartInstance.destroy();
+    barChartInstance = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + fmt(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: v => (v / 10000).toFixed(0) + '만'
+            },
+            grid: { color: '#f0f0f0' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // 파이 차트: 비용 구성 (1달)
+    const pieLabels = kpassOn && monthlyDiscount > 0
+      ? ['실부담 교통비', 'K-패스 환급']
+      : ['교통비'];
+    const pieValues = kpassOn && monthlyDiscount > 0
+      ? [monthlyNet, monthlyDiscount]
+      : [monthlyRaw];
+    const pieColors = ['#6366f1', '#34d399'];
+
+    if (pieChartInstance) pieChartInstance.destroy();
+    pieChartInstance = new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: pieLabels,
+        datasets: [{
+          data: pieValues,
+          backgroundColor: pieColors,
+          borderWidth: 0,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { font: { size: 13 }, padding: 16 }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${fmt(ctx.parsed)} (${Math.round(ctx.parsed / monthlyRaw * 100)}%)`
+            }
+          }
+        }
+      }
+    });
+
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // 페이지 로드 시 바로 계산
+  window.onload = () => calculate();
+</script>
+</body>
+</html>
