@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학점 관리 & 졸업 계산기</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fb;
+      min-height: 100vh;
+      padding: 32px 16px;
+      color: #1a1a2e;
+    }
+
+    h1 { text-align: center; font-size: 24px; margin-bottom: 6px; }
+    .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 32px; }
+
+    .layout {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+    .card:last-child { margin-bottom: 0; }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafafa;
+    }
+
+    input:focus, select:focus { border-color: #6366f1; background: white; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* 척도 버튼 */
+    .scale-btns { display: flex; gap: 8px; margin-bottom: 16px; }
+    .scale-btn {
+      flex: 1; padding: 10px;
+      border: 1.5px solid #e5e7eb; border-radius: 10px;
+      background: #fafafa; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; color: #555;
+    }
+    .scale-btn.active { background: #6366f1; border-color: #6366f1; color: white; }
+
+    /* 탭 */
+    .tab-bar {
+      display: flex; gap: 4px; margin-bottom: 18px;
+      background: #f0f0ff; border-radius: 12px; padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px 6px;
+      border: none; border-radius: 9px;
+      background: transparent; font-size: 13px; font-weight: 600;
+      cursor: pointer; color: #888; transition: all 0.15s;
+    }
+    .tab-btn.active { background: white; color: #6366f1; box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+
+    .tab-panel { display: none; }
+    .tab-panel.show { display: block; }
+
+    /* 과목 행 */
+    .subject-row {
+      display: grid;
+      grid-template-columns: 1fr 52px 90px 32px;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .subject-row input, .subject-row select {
+      padding: 8px 10px; font-size: 13px;
+    }
+    .del-btn {
+      background: #fee2e2; color: #dc2626;
+      border: none; border-radius: 8px;
+      width: 30px; height: 34px;
+      font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .del-btn:hover { background: #fca5a5; }
+
+    .add-subject-btn {
+      width: 100%; padding: 9px;
+      border: 1.5px dashed #c7d2fe; border-radius: 10px;
+      background: transparent; color: #6366f1;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      margin-top: 4px; transition: all 0.15s;
+    }
+    .add-subject-btn:hover { background: #f0f0ff; }
+
+    .gpa-preview {
+      background: #f0f0ff; border-radius: 10px;
+      padding: 12px 16px; margin-top: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .gpa-preview-label { font-size: 13px; color: #555; }
+    .gpa-preview-value { font-size: 22px; font-weight: 700; color: #6366f1; }
+
+    /* 학기 히스토리 */
+    .hist-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 32px;
+      gap: 6px; align-items: center; margin-bottom: 8px;
+    }
+    .hist-row input { padding: 8px 10px; font-size: 13px; }
+
+    /* 이수율 진행 바 */
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: #888; margin-bottom: 6px;
+    }
+    .progress-bar {
+      width: 100%; height: 12px;
+      background: #e8e8ff; border-radius: 99px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      transition: width 0.5s ease;
+    }
+
+    /* 등급 참고표 */
+    .grade-ref-toggle {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: #6366f1; cursor: pointer;
+      margin-bottom: 8px; user-select: none;
+    }
+    .grade-ref-table {
+      display: none;
+      width: 100%; border-collapse: collapse;
+      font-size: 12px; margin-bottom: 16px;
+    }
+    .grade-ref-table.show { display: table; }
+    .grade-ref-table th {
+      background: #f8f8ff; padding: 7px 10px;
+      text-align: center; color: #555; font-weight: 600;
+      border-bottom: 2px solid #e8e8ff;
+    }
+    .grade-ref-table td {
+      padding: 7px 10px; text-align: center;
+      border-bottom: 1px solid #f0f0f0; color: #333;
+    }
+
+    /* 계산 버튼 */
+    .calc-btn {
+      width: 100%; background: #6366f1; color: white;
+      border: none; border-radius: 12px; padding: 14px;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s; margin-top: 4px;
+    }
+    .calc-btn:hover { background: #4f46e5; }
+
+    /* 결과 */
+    .verdict {
+      border-radius: 14px; padding: 18px 20px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .verdict.pass { background: #ecfdf5; border: 1.5px solid #6ee7b7; }
+    .verdict.warn { background: #fffbeb; border: 1.5px solid #fcd34d; }
+    .verdict.fail { background: #fef2f2; border: 1.5px solid #fca5a5; }
+
+    .verdict-icon { font-size: 32px; flex-shrink: 0; }
+    .verdict-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .verdict.pass .verdict-title { color: #065f46; }
+    .verdict.warn .verdict-title { color: #92400e; }
+    .verdict.fail .verdict-title { color: #991b1b; }
+    .verdict-desc { font-size: 13px; color: #555; line-height: 1.5; }
+
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 20px;
+    }
+    .stat {
+      background: #f8f8ff; border: 1.5px solid #e8e8ff;
+      border-radius: 12px; padding: 14px 12px; text-align: center;
+    }
+    .stat.highlight { background: #6366f1; border-color: #6366f1; }
+    .stat-label { font-size: 11px; color: #888; margin-bottom: 5px; }
+    .stat.highlight .stat-label { color: rgba(255,255,255,0.7); }
+    .stat-value { font-size: 20px; font-weight: 700; color: #6366f1; }
+    .stat.highlight .stat-value { color: white; }
+    .stat-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .stat.highlight .stat-sub { color: rgba(255,255,255,0.6); }
+
+    /* 시뮬레이션 테이블 */
+    .sim-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .sim-table th {
+      background: #f8f8ff; padding: 10px 12px;
+      text-align: left; font-weight: 600; color: #555;
+      border-bottom: 2px solid #e8e8ff;
+    }
+    .sim-table td {
+      padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #333;
+    }
+    .sim-table tr:last-child td { border-bottom: none; }
+    .sim-table tr.current td { background: #f0f0ff; font-weight: 600; }
+
+    .tag {
+      display: inline-block; padding: 3px 8px;
+      border-radius: 6px; font-size: 11px; font-weight: 600;
+    }
+    .tag.possible { background: #d1fae5; color: #065f46; }
+    .tag.hard     { background: #fef3c7; color: #92400e; }
+    .tag.impossible { background: #fee2e2; color: #991b1b; }
+
+    .chart-wrap  { position: relative; height: 220px; margin-bottom: 6px; }
+    .chart-wrap2 { position: relative; height: 180px; }
+
+    .results-col { display: none; }
+    .results-col.show { display: block; }
+
+    .section-sep {
+      font-size: 12px; font-weight: 700; color: #aaa;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 12px; margin-top: 4px;
+    }
+
+    .info-tip {
+      background: #f0f0ff; border-radius: 10px;
+      padding: 10px 14px; font-size: 12px; color: #555;
+      margin-bottom: 14px; line-height: 1.6;
+    }
+
+    .col-header {
+      display: grid;
+      grid-template-columns: 1fr 52px 90px 32px;
+      gap: 6px; margin-bottom: 4px;
+    }
+    .col-header span { font-size: 11px; color: #aaa; padding: 0 2px; }
+  </style>
+</head>
+<body>
+
+<h1>🎓 학점 관리 & 졸업 계산기</h1>
+<p class="subtitle">현재 학점으로 졸업 가능한지, 목표 GPA를 위해 얼마나 필요한지 계산합니다</p>
+
+<div class="layout">
+
+  <!-- ── 입력 컬럼 ── -->
+  <div>
+
+    <!-- 척도 + 탭 -->
+    <div class="card">
+      <div class="card-title">학점 입력</div>
+
+      <div class="field">
+        <label>학점 척도</label>
+        <div class="scale-btns">
+          <button class="scale-btn active" onclick="setScale(4.5, this)">4.5 만점</button>
+          <button class="scale-btn" onclick="setScale(4.0, this)">4.0 만점</button>
+        </div>
+      </div>
+
+      <!-- 등급 참고표 토글 -->
+      <div class="grade-ref-toggle" onclick="toggleGradeRef()">
+        <span id="gradeRefArrow">▶</span> 등급 → GPA 변환표 보기
+      </div>
+      <table class="grade-ref-table" id="gradeRefTable">
+        <thead>
+          <tr><th>등급</th><th>4.5 기준</th><th>4.0 기준</th></tr>
+        </thead>
+        <tbody id="gradeRefBody"></tbody>
+      </table>
+
+      <!-- 탭 -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('direct', this)">직접 입력</button>
+        <button class="tab-btn" onclick="switchTab('subject', this)">과목별 입력</button>
+        <button class="tab-btn" onclick="switchTab('history', this)">학기 기록</button>
+      </div>
+
+      <!-- 탭 1: 직접 입력 -->
+      <div class="tab-panel show" id="tab-direct">
+        <div class="row">
+          <div class="field">
+            <label>현재 평점 (GPA)</label>
+            <input type="number" id="currentGpa" value="3.20" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>이수 학점 (취득)</label>
+            <input type="number" id="earnedCredits" value="60" min="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭 2: 과목별 입력 -->
+      <div class="tab-panel" id="tab-subject">
+        <div class="info-tip">과목을 입력하면 GPA가 자동 계산됩니다.</div>
+        <div class="col-header">
+          <span>과목명</span><span>학점</span><span>등급</span><span></span>
+        </div>
+        <div id="subjectRows"></div>
+        <button class="add-subject-btn" onclick="addSubjectRow()">+ 과목 추가</button>
+        <div class="gpa-preview">
+          <span class="gpa-preview-label">계산된 GPA</span>
+          <span class="gpa-preview-value" id="subjectGpaPreview">-</span>
+        </div>
+      </div>
+
+      <!-- 탭 3: 학기 기록 -->
+      <div class="tab-panel" id="tab-history">
+        <div class="info-tip">
+          지난 학기 GPA를 입력하면 라인 차트에<br>실제 성적 추이가 반영됩니다.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 32px;gap:6px;margin-bottom:4px;">
+          <span style="font-size:11px;color:#aaa">학기 이름</span>
+          <span style="font-size:11px;color:#aaa">GPA</span>
+          <span></span>
+        </div>
+        <div id="historyRows"></div>
+        <button class="add-subject-btn" onclick="addHistoryRow()">+ 학기 추가</button>
+      </div>
+    </div>
+
+    <!-- 졸업 정보 -->
+    <div class="card">
+      <div class="card-title">졸업 정보</div>
+      <div class="row">
+        <div class="field">
+          <label>졸업 필요 총 학점</label>
+          <input type="number" id="totalRequired" value="130" min="1">
+        </div>
+        <div class="field">
+          <label>남은 학기 수</label>
+          <input type="number" id="semestersLeft" value="4" min="1" max="20">
+        </div>
+      </div>
+      <div class="field">
+        <label>학기당 평균 이수 학점</label>
+        <input type="number" id="creditsPerSem" value="18" min="1" max="24">
+      </div>
+    </div>
+
+    <!-- 목표 설정 -->
+    <div class="card">
+      <div class="card-title">목표 설정</div>
+      <div class="row">
+        <div class="field">
+          <label>목표 졸업 GPA</label>
+          <input type="number" id="targetGpa" value="3.50" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>최저 졸업 기준 GPA</label>
+          <input type="number" id="minGpa" value="2.00" min="0" step="0.01">
+        </div>
+      </div>
+      <button class="calc-btn" onclick="calculate()">계산하기</button>
+    </div>
+  </div>
+
+  <!-- ── 결과 컬럼 ── -->
+  <div class="results-col" id="resultsCol">
+
+    <!-- 판정 + 스탯 -->
+    <div class="card">
+      <div id="verdictBox"></div>
+
+      <!-- 이수율 진행 바 -->
+      <div class="progress-wrap" id="progressWrap"></div>
+
+      <div class="stat-grid" id="statGrid"></div>
+
+      <!-- GPA 추이 차트 -->
+      <div class="section-sep">GPA 추이 시뮬레이션</div>
+      <div class="chart-wrap">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 시나리오 테이블 -->
+    <div class="card">
+      <div class="card-title">학기별 필요 GPA 시나리오</div>
+      <div id="simTable"></div>
+    </div>
+
+    <!-- 학점 이수 현황 -->
+    <div class="card">
+      <div class="card-title">학점 이수 현황</div>
+      <div class="chart-wrap2">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let scale = 4.5;
+  let lineChart = null, barChart = null;
+  let activeTab = 'direct';
+
+  /* ── 등급표 ── */
+  const GRADES_45 = { 'A+':4.5,'A':4.0,'B+':3.5,'B':3.0,'C+':2.5,'C':2.0,'D+':1.5,'D':1.0,'F':0.0 };
+  const GRADES_40 = { 'A+':4.0,'A':3.5,'B+':3.0,'B':2.5,'C+':2.0,'C':1.5,'D+':1.0,'D':0.5,'F':0.0 };
+
+  function buildGradeRefTable() {
+    const keys = Object.keys(GRADES_45);
+    document.getElementById('gradeRefBody').innerHTML = keys.map(k =>
+      `<tr><td><strong>${k}</strong></td><td>${GRADES_45[k].toFixed(1)}</td><td>${GRADES_40[k].toFixed(1)}</td></tr>`
+    ).join('');
+  }
+
+  function toggleGradeRef() {
+    const t = document.getElementById('gradeRefTable');
+    const a = document.getElementById('gradeRefArrow');
+    t.classList.toggle('show');
+    a.textContent = t.classList.contains('show') ? '▼' : '▶';
+  }
+
+  /* ── 척도 ── */
+  function setScale(val, btn) {
+    scale = val;
+    document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const cgpa = document.getElementById('currentGpa');
+    const tgpa = document.getElementById('targetGpa');
+    if (val === 4.0) {
+      if (parseFloat(cgpa.value) > 4.0) cgpa.value = '4.00';
+      if (parseFloat(tgpa.value) > 4.0) tgpa.value = '4.00';
+    }
+    updateSubjectGpa();
+  }
+
+  /* ── 탭 ── */
+  function switchTab(tab, btn) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('show'));
+    document.getElementById('tab-' + tab).classList.add('show');
+  }
+
+  /* ── 과목별 입력 ── */
+  function gradeOptions(selected) {
+    const keys = Object.keys(GRADES_45);
+    return keys.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${k}</option>`).join('');
+  }
+
+  function addSubjectRow(name='', credits=3, grade='B+') {
+    const div = document.createElement('div');
+    div.className = 'subject-row';
+    div.innerHTML = `
+      <input type="text" placeholder="과목명" value="${name}" oninput="updateSubjectGpa()">
+      <input type="number" value="${credits}" min="1" max="6" oninput="updateSubjectGpa()">
+      <select onchange="updateSubjectGpa()">${gradeOptions(grade)}</select>
+      <button class="del-btn" onclick="this.parentElement.remove(); updateSubjectGpa()">×</button>
+    `;
+    document.getElementById('subjectRows').appendChild(div);
+    updateSubjectGpa();
+  }
+
+  function updateSubjectGpa() {
+    const rows = document.querySelectorAll('#subjectRows .subject-row');
+    const gradeMap = scale === 4.5 ? GRADES_45 : GRADES_40;
+    let totalPts = 0, totalCreds = 0;
+    rows.forEach(row => {
+      const cred = parseInt(row.querySelectorAll('input')[1].value) || 0;
+      const grade = row.querySelector('select').value;
+      totalPts += (gradeMap[grade] || 0) * cred;
+      totalCreds += cred;
+    });
+    const gpa = totalCreds > 0 ? (totalPts / totalCreds).toFixed(2) : '-';
+    document.getElementById('subjectGpaPreview').textContent = gpa;
+
+    if (activeTab === 'subject' && totalCreds > 0) {
+      document.getElementById('currentGpa').value = parseFloat(gpa).toFixed(2);
+      document.getElementById('earnedCredits').value = totalCreds;
+    }
+  }
+
+  /* ── 학기 히스토리 ── */
+  function addHistoryRow(label='', gpa='') {
+    const div = document.createElement('div');
+    div.className = 'hist-row';
+    div.innerHTML = `
+      <input type="text" placeholder="예: 2024-1" value="${label}">
+      <input type="number" value="${gpa}" min="0" max="4.5" step="0.01" placeholder="GPA">
+      <button class="del-btn" onclick="this.parentElement.remove()">×</button>
+    `;
+    document.getElementById('historyRows').appendChild(div);
+  }
+
+  function getHistoryData() {
+    const rows = document.querySelectorAll('#historyRows .hist-row');
+    const data = [];
+    rows.forEach(row => {
+      const label = row.querySelectorAll('input')[0].value.trim();
+      const gpa   = parseFloat(row.querySelectorAll('input')[1].value);
+      if (label && !isNaN(gpa)) data.push({ label, gpa });
+    });
+    return data;
+  }
+
+  /* ── 유틸 ── */
+  function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+  /* ── 메인 계산 ── */
+  function calculate() {
+    if (activeTab === 'subject') updateSubjectGpa();
+
+    const currentGpa    = clamp(parseFloat(document.getElementById('currentGpa').value) || 0, 0, scale);
+    const earnedCredits = parseInt(document.getElementById('earnedCredits').value) || 0;
+    const totalRequired = parseInt(document.getElementById('totalRequired').value) || 130;
+    const semestersLeft = parseInt(document.getElementById('semestersLeft').value) || 1;
+    const creditsPerSem = parseInt(document.getElementById('creditsPerSem').value) || 18;
+    const targetGpa     = clamp(parseFloat(document.getElementById('targetGpa').value) || 0, 0, scale);
+    const minGpa        = clamp(parseFloat(document.getElementById('minGpa').value) || 2.0, 0, scale);
+
+    const remainingCredits    = Math.max(0, totalRequired - earnedCredits);
+    const plannedTotal        = earnedCredits + creditsPerSem * semestersLeft;
+    const willEarnEnough      = plannedTotal >= totalRequired;
+    const totalCreditsAtEnd   = plannedTotal;
+    const currentGradePoints  = currentGpa * earnedCredits;
+    const remainCreditsEarned = creditsPerSem * semestersLeft;
+
+    const neededPerRemaining = remainCreditsEarned > 0
+      ? (targetGpa * totalCreditsAtEnd - currentGradePoints) / remainCreditsEarned : 0;
+    const neededForMin = remainCreditsEarned > 0
+      ? (minGpa * totalCreditsAtEnd - currentGradePoints) / remainCreditsEarned : 0;
+
+    const canGraduate    = willEarnEnough && neededForMin <= scale;
+    const targetReachable = neededPerRemaining <= scale;
+
+    /* 판정 배너 */
+    let verdictClass, verdictIcon, verdictTitle, verdictDesc;
+    if (!canGraduate) {
+      verdictClass = 'fail'; verdictIcon = '❌';
+      verdictTitle = '졸업 기준 달성 어려움';
+      verdictDesc  = `최저 기준 GPA ${minGpa.toFixed(2)} 달성을 위해 남은 학기 평균 <strong>${neededForMin.toFixed(2)}</strong> 이상 필요합니다.`
+        + (!willEarnEnough ? ` 학점도 ${plannedTotal}학점으로 ${totalRequired}학점에 미달합니다.` : '');
+    } else if (!targetReachable) {
+      verdictClass = 'warn'; verdictIcon = '⚠️';
+      verdictTitle = '졸업은 가능, 목표 GPA 달성 어려움';
+      verdictDesc  = `졸업 기준은 충족하지만 목표 GPA ${targetGpa.toFixed(2)} 달성을 위해 남은 학기 평균 <strong>${neededPerRemaining.toFixed(2)}</strong> 이상이 필요합니다 (${scale}점 초과).`;
+    } else {
+      verdictClass = 'pass'; verdictIcon = '✅';
+      verdictTitle = '졸업 가능 & 목표 GPA 달성 가능';
+      verdictDesc  = `남은 학기 평균 <strong>${neededPerRemaining.toFixed(2)}</strong> 이상을 유지하면 목표 GPA ${targetGpa.toFixed(2)}를 달성하며 졸업할 수 있습니다.`;
+    }
+
+    document.getElementById('verdictBox').innerHTML = `
+      <div class="verdict ${verdictClass}">
+        <div class="verdict-icon">${verdictIcon}</div>
+        <div>
+          <div class="verdict-title">${verdictTitle}</div>
+          <div class="verdict-desc">${verdictDesc}</div>
+        </div>
+      </div>`;
+
+    /* 이수율 진행 바 */
+    const pct = Math.min(100, Math.round(earnedCredits / totalRequired * 100));
+    document.getElementById('progressWrap').innerHTML = `
+      <div class="progress-label">
+        <span>학점 이수율</span>
+        <span><strong>${earnedCredits}</strong> / ${totalRequired}학점 (${pct}%)</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>`;
+
+    /* 스탯 카드 */
+    document.getElementById('statGrid').innerHTML = `
+      <div class="stat">
+        <div class="stat-label">현재 GPA</div>
+        <div class="stat-value">${currentGpa.toFixed(2)}</div>
+        <div class="stat-sub">/ ${scale.toFixed(1)}</div>
+      </div>
+      <div class="stat highlight">
+        <div class="stat-label">필요 학기 평균</div>
+        <div class="stat-value">${neededPerRemaining > 0 ? neededPerRemaining.toFixed(2) : '-'}</div>
+        <div class="stat-sub">목표 달성용</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">졸업까지 남은</div>
+        <div class="stat-value">${remainingCredits}</div>
+        <div class="stat-sub">학점 필요</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">이수 학점</div>
+        <div class="stat-value">${earnedCredits}</div>
+        <div class="stat-sub">/ ${totalRequired}학점</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">예상 총 학점</div>
+        <div class="stat-value">${plannedTotal}</div>
+        <div class="stat-sub">${willEarnEnough ? '✓ 충족' : '✗ 미달'}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">남은 학기</div>
+        <div class="stat-value">${semestersLeft}</div>
+        <div class="stat-sub">학기</div>
+      </div>`;
+
+    /* 시나리오 테이블 */
+    const scenarios = [
+      { label: '현재 유지',  semGpa: currentGpa },
+      { label: '소폭 향상',  semGpa: Math.min(scale, currentGpa + 0.3) },
+      { label: '목표 달성',  semGpa: neededPerRemaining },
+      { label: '최고 학점',  semGpa: scale },
+    ];
+
+    let tableHtml = `<table class="sim-table"><thead><tr>
+      <th>시나리오</th><th>학기 GPA</th><th>졸업 최종 GPA</th><th>목표 달성</th>
+    </tr></thead><tbody>`;
+
+    scenarios.forEach(s => {
+      if (s.semGpa < 0 || s.semGpa > scale) return;
+      const finalPts = currentGradePoints + s.semGpa * remainCreditsEarned;
+      const finalGpa = totalCreditsAtEnd > 0 ? clamp(finalPts / totalCreditsAtEnd, 0, scale) : s.semGpa;
+      const achieves  = finalGpa >= targetGpa;
+      const isTarget  = Math.abs(s.semGpa - neededPerRemaining) < 0.01;
+      tableHtml += `<tr ${isTarget ? 'class="current"' : ''}>
+        <td>${s.label}${isTarget ? ' ⭐' : ''}</td>
+        <td>${s.semGpa.toFixed(2)}</td>
+        <td>${finalGpa.toFixed(2)}</td>
+        <td>${achieves ? '<span class="tag possible">달성</span>' : '<span class="tag hard">미달</span>'}</td>
+      </tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    document.getElementById('simTable').innerHTML = tableHtml;
+
+    /* ── 라인 차트 ── */
+    const histData = getHistoryData();
+
+    // 히스토리 라벨 + 현재 + 미래
+    const semLabels = [...histData.map(d => d.label), '현재'];
+    for (let i = 1; i <= semestersLeft; i++) semLabels.push(`${i}학기 후`);
+
+    function buildLine(semGpa) {
+      const prefix = histData.map(d => null); // 히스토리 구간은 null (해당 라인 없음)
+      const line = [currentGpa];
+      let pts = currentGradePoints, creds = earnedCredits;
+      for (let i = 0; i < semestersLeft; i++) {
+        pts += semGpa * creditsPerSem;
+        creds += creditsPerSem;
+        line.push(parseFloat((pts / creds).toFixed(3)));
+      }
+      return [...prefix, ...line];
+    }
+
+    const histLine = [...histData.map(d => d.gpa), currentGpa, ...Array(semestersLeft).fill(null)];
+    const lineCurrent = buildLine(currentGpa);
+    const lineTarget  = buildLine(neededPerRemaining > 0 && neededPerRemaining <= scale ? neededPerRemaining : currentGpa);
+    const lineBest    = buildLine(scale);
+
+    if (lineChart) lineChart.destroy();
+    lineChart = new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: {
+        labels: semLabels,
+        datasets: [
+          histData.length > 0 ? {
+            label: '실제 기록',
+            data: histLine,
+            borderColor: '#f59e0b',
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointBackgroundColor: '#f59e0b',
+            tension: 0.3,
+            spanGaps: false,
+          } : null,
+          {
+            label: '현재 유지',
+            data: lineCurrent,
+            borderColor: '#cbd5e1',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 3,
+            tension: 0.3,
+          },
+          {
+            label: '목표 달성 경로',
+            data: lineTarget,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99,102,241,0.08)',
+            borderWidth: 2.5,
+            pointRadius: 4,
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: '올 A+ (최고)',
+            data: lineBest,
+            borderColor: '#34d399',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [5, 4],
+            pointRadius: 3,
+            tension: 0.3,
+          },
+        ].filter(Boolean)
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) : '-'}` } }
+        },
+        scales: {
+          y: {
+            min: Math.max(0, Math.min(currentGpa, ...(histData.map(d=>d.gpa))) - 0.5),
+            max: scale,
+            ticks: { callback: v => v.toFixed(1) },
+            grid: { color: '#f0f0f0' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    /* ── 가로 막대 차트 ── */
+    if (barChart) barChart.destroy();
+    const remaining = Math.max(0, totalRequired - earnedCredits);
+    const extra     = Math.max(0, plannedTotal - totalRequired);
+
+    barChart = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: ['학점 현황'],
+        datasets: [
+          { label: '이수 완료',  data: [earnedCredits], backgroundColor: '#6366f1', borderRadius: 6, borderSkipped: false },
+          { label: '남은 필수',  data: [remaining],     backgroundColor: '#e0e0ff', borderRadius: 6, borderSkipped: false },
+          { label: '초과 예상',  data: [extra],         backgroundColor: '#d1fae5', borderRadius: 6, borderSkipped: false },
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x}학점` } }
+        },
+        scales: {
+          x: { stacked: true, grid: { color: '#f0f0f0' }, ticks: { callback: v => v + '학점' } },
+          y: { stacked: true, grid: { display: false } }
+        }
+      }
+    });
+
+    document.getElementById('resultsCol').classList.add('show');
+    document.getElementById('resultsCol').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ── 초기화 ── */
+  window.onload = () => {
+    buildGradeRefTable();
+    // 과목 기본 샘플
+    addSubjectRow('전공필수A', 3, 'A');
+    addSubjectRow('전공선택B', 3, 'B+');
+    addSubjectRow('교양', 2, 'A+');
+    // 히스토리 기본 샘플
+    addHistoryRow('2023-1', 3.10);
+    addHistoryRow('2023-2', 3.30);
+    calculate();
+  };
+</script>
+</body>
+</html>
