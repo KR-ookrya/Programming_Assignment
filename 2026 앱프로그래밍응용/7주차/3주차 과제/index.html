@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>랜덤 명언 생성기</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .quote-icon {
+      font-size: 48px;
+      color: #e94560;
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+
+    #quote-text {
+      font-size: 1.35rem;
+      color: #f0f0f0;
+      line-height: 1.8;
+      min-height: 80px;
+      transition: opacity 0.3s ease;
+    }
+
+    #quote-text.fade {
+      opacity: 0;
+    }
+
+    #quote-author {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      color: #e94560;
+      font-style: italic;
+      min-height: 24px;
+      transition: opacity 0.3s ease;
+    }
+
+    #quote-author.fade {
+      opacity: 0;
+    }
+
+    .divider {
+      width: 60px;
+      height: 2px;
+      background: #e94560;
+      margin: 28px auto;
+      border-radius: 2px;
+    }
+
+    #btn-new-quote {
+      background: #e94560;
+      color: #fff;
+      border: none;
+      padding: 14px 36px;
+      font-size: 1rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+    }
+
+    #btn-new-quote:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(233, 69, 96, 0.55);
+    }
+
+    #btn-new-quote:active {
+      transform: translateY(0);
+    }
+
+    #quote-count {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="quote-icon">"</div>
+    <p id="quote-text">버튼을 눌러 오늘의 명언을 확인하세요.</p>
+    <p id="quote-author"></p>
+    <div class="divider"></div>
+    <button id="btn-new-quote">새 명언 보기</button>
+    <p id="quote-count"></p>
+  </div>
+
+  <script>
+    const quotes = [
+      { text: "인생은 자전거를 타는 것과 같다. 균형을 잡으려면 계속 움직여야 한다.", author: "알베르트 아인슈타인" },
+      { text: "시작이 반이다.", author: "아리스토텔레스" },
+      { text: "천 리 길도 한 걸음부터.", author: "노자" },
+      { text: "실패는 더 현명하게 다시 시작할 수 있는 기회다.", author: "헨리 포드" },
+      { text: "당신이 할 수 있다고 믿든, 할 수 없다고 믿든, 당신이 옳다.", author: "헨리 포드" },
+      { text: "오늘 할 수 있는 일을 내일로 미루지 마라.", author: "벤자민 프랭클린" },
+      { text: "지식에 대한 투자가 최고의 이익을 낳는다.", author: "벤자민 프랭클린" },
+      { text: "자신을 이기는 자가 가장 강한 자다.", author: "노자" },
+      { text: "꿈을 꿀 수 있다면 이룰 수도 있다.", author: "월트 디즈니" },
+      { text: "성공은 열정을 잃지 않고 실패에서 실패로 걸어가는 것이다.", author: "윈스턴 처칠" },
+      { text: "가장 어두운 밤도 끝나고 태양은 뜨게 되어 있다.", author: "빅토르 위고" },
+      { text: "남들이 포기할 때 계속하는 것이 성공의 비밀이다.", author: "빌 뉴튼" },
+      { text: "변화를 두려워하는 자는 발전할 수 없다.", author: "조지 버나드 쇼" },
+      { text: "행복은 준비된 마음에 찾아온다.", author: "루이 파스퇴르" },
+      { text: "포기하지 않는 한 실패한 것이 아니다.", author: "알버트 아인슈타인" },
+    ];
+
+    let lastIndex = -1;
+
+    function getRandomQuote() {
+      let index;
+      do {
+        index = Math.floor(Math.random() * quotes.length);
+      } while (index === lastIndex);
+      lastIndex = index;
+      return { quote: quotes[index], number: index + 1 };
+    }
+
+    function displayQuote() {
+      const quoteText = document.getElementById('quote-text');
+      const quoteAuthor = document.getElementById('quote-author');
+      const quoteCount = document.getElementById('quote-count');
+
+      quoteText.classList.add('fade');
+      quoteAuthor.classList.add('fade');
+
+      setTimeout(() => {
+        const { quote, number } = getRandomQuote();
+        quoteText.textContent = quote.text;
+        quoteAuthor.textContent = `— ${quote.author}`;
+        quoteCount.textContent = `${number} / ${quotes.length}`;
+
+        quoteText.classList.remove('fade');
+        quoteAuthor.classList.remove('fade');
+      }, 300);
+    }
+
+    document.getElementById('btn-new-quote').addEventListener('click', displayQuote);
+
+    // 페이지 로드 시 바로 명언 표시
+    displayQuote();
+  </script>
+</body>
+</html>
