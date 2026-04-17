@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>영화 검색 앱</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #0d0d0d;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* 헤더 */
+    header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 40px 20px 30px;
+      text-align: center;
+      border-bottom: 2px solid #e50914;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    header h1 span {
+      color: #e50914;
+    }
+
+    header p {
+      margin-top: 6px;
+      color: #aaa;
+      font-size: 0.95rem;
+    }
+
+    /* 검색창 */
+    .search-container {
+      display: flex;
+      justify-content: center;
+      padding: 30px 20px 10px;
+      gap: 10px;
+    }
+
+    .search-container input {
+      width: 100%;
+      max-width: 520px;
+      padding: 14px 20px;
+      border-radius: 30px;
+      border: 2px solid #333;
+      background: #1c1c1c;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .search-container input:focus {
+      border-color: #e50914;
+    }
+
+    .search-container input::placeholder {
+      color: #666;
+    }
+
+    .search-container button {
+      padding: 14px 28px;
+      border-radius: 30px;
+      border: none;
+      background: #e50914;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .search-container button:hover {
+      background: #b20610;
+    }
+
+    .search-container button:active {
+      transform: scale(0.97);
+    }
+
+    /* API 키 안내 배너 */
+    .api-notice {
+      background: #1a1a0d;
+      border: 1px solid #f5c518;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin: 10px auto;
+      max-width: 760px;
+      font-size: 0.88rem;
+      color: #f5c518;
+      line-height: 1.6;
+    }
+
+    .api-notice a {
+      color: #f5c518;
+      font-weight: bold;
+    }
+
+    /* API 키 입력 */
+    .apikey-container {
+      display: flex;
+      justify-content: center;
+      padding: 10px 20px 20px;
+      gap: 10px;
+    }
+
+    .apikey-container input {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px 18px;
+      border-radius: 30px;
+      border: 2px solid #444;
+      background: #1c1c1c;
+      color: #f5c518;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .apikey-container input:focus {
+      border-color: #f5c518;
+    }
+
+    .apikey-container button {
+      padding: 10px 22px;
+      border-radius: 30px;
+      border: none;
+      background: #f5c518;
+      color: #0d0d0d;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .apikey-container button:hover {
+      background: #d4aa10;
+    }
+
+    /* 상태 메시지 */
+    #status {
+      text-align: center;
+      padding: 20px;
+      color: #888;
+      font-size: 0.95rem;
+    }
+
+    #status.error {
+      color: #e50914;
+    }
+
+    /* 로딩 스피너 */
+    .spinner {
+      display: none;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .spinner.active {
+      display: flex;
+    }
+
+    .spinner div {
+      width: 12px;
+      height: 12px;
+      margin: 0 5px;
+      border-radius: 50%;
+      background: #e50914;
+      animation: bounce 0.6s infinite alternate;
+    }
+
+    .spinner div:nth-child(2) { animation-delay: 0.2s; }
+    .spinner div:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      from { transform: translateY(0); opacity: 0.4; }
+      to   { transform: translateY(-14px); opacity: 1; }
+    }
+
+    /* 영화 그리드 */
+    #results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 22px;
+      padding: 20px 30px 60px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* 영화 카드 */
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(229, 9, 20, 0.3);
+    }
+
+    .card img {
+      width: 100%;
+      aspect-ratio: 2/3;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card .no-poster {
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .card .info {
+      padding: 12px;
+    }
+
+    .card .title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #f0f0f0;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .card .year {
+      font-size: 0.78rem;
+      color: #888;
+    }
+
+    .card .rating {
+      background: #f5c518;
+      color: #0d0d0d;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    /* 모달 */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #modal-overlay.active {
+      display: flex;
+    }
+
+    #modal {
+      background: #1a1a1a;
+      border-radius: 16px;
+      max-width: 700px;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      position: relative;
+      max-height: 90vh;
+    }
+
+    #modal img {
+      width: 220px;
+      min-width: 220px;
+      object-fit: cover;
+    }
+
+    #modal .no-poster-modal {
+      width: 220px;
+      min-width: 220px;
+      background: #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+      font-size: 0.85rem;
+    }
+
+    #modal .modal-body {
+      padding: 28px;
+      overflow-y: auto;
+    }
+
+    #modal .modal-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    #modal .modal-original {
+      color: #888;
+      font-size: 0.88rem;
+      margin-top: 4px;
+    }
+
+    #modal .modal-meta {
+      display: flex;
+      gap: 12px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+
+    #modal .badge {
+      background: #2c2c2c;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      color: #ccc;
+    }
+
+    #modal .badge.rating {
+      background: #f5c518;
+      color: #0d0d0d;
+      font-weight: 800;
+    }
+
+    #modal .overview {
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: #bbb;
+      margin-top: 10px;
+    }
+
+    #modal .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    #modal .close-btn:hover {
+      opacity: 1;
+    }
+
+    /* 반응형 */
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.8rem; }
+      #results { padding: 16px; gap: 14px; }
+      #modal { flex-direction: column; }
+      #modal img, #modal .no-poster-modal { width: 100%; min-width: unset; height: 260px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>MOVIE<span>FIND</span></h1>
+    <p>원하는 영화를 검색해보세요</p>
+  </header>
+
+  <div class="api-notice">
+    <strong>API 키 설정 방법:</strong>
+    ① <a href="https://www.themoviedb.org/signup" target="_blank">themoviedb.org</a> 에서 무료 회원가입
+    → ② 프로필 &gt; 설정 &gt; API 메뉴에서 API 키(v3 auth) 발급
+    → ③ 아래 입력창에 붙여넣기 후 <strong>저장</strong>
+  </div>
+
+  <div class="apikey-container">
+    <input type="text" id="apikey-input" placeholder="TMDB API 키를 입력하세요..." />
+    <button onclick="saveApiKey()">저장</button>
+  </div>
+
+  <div class="search-container">
+    <input
+      type="text"
+      id="search-input"
+      placeholder="영화 제목을 검색하세요 (예: 인터스텔라)"
+      onkeydown="if(event.key==='Enter') searchMovies()"
+    />
+    <button onclick="searchMovies()">검색</button>
+  </div>
+
+  <div id="status">API 키를 입력한 후 영화를 검색해보세요.</div>
+
+  <div class="spinner" id="spinner">
+    <div></div><div></div><div></div>
+  </div>
+
+  <div id="results"></div>
+
+  <!-- 상세 모달 -->
+  <div id="modal-overlay" onclick="closeModal(event)">
+    <div id="modal">
+      <button class="close-btn" onclick="closeModal()">×</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script>
+    const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
+    let API_KEY = localStorage.getItem('tmdb_api_key') || '';
+
+    // 저장된 API 키 불러오기
+    if (API_KEY) {
+      document.getElementById('apikey-input').value = API_KEY;
+    }
+
+    function saveApiKey() {
+      const val = document.getElementById('apikey-input').value.trim();
+      if (!val) {
+        alert('API 키를 입력해주세요.');
+        return;
+      }
+      API_KEY = val;
+      localStorage.setItem('tmdb_api_key', API_KEY);
+      setStatus('API 키가 저장되었습니다. 이제 영화를 검색해보세요!', false);
+    }
+
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = isError ? 'error' : '';
+    }
+
+    function setLoading(on) {
+      document.getElementById('spinner').className = on ? 'spinner active' : 'spinner';
+      if (on) document.getElementById('status').textContent = '';
+    }
+
+    async function searchMovies() {
+      const query = document.getElementById('search-input').value.trim();
+
+      if (!API_KEY) {
+        setStatus('먼저 API 키를 입력하고 저장해주세요.', true);
+        return;
+      }
+      if (!query) {
+        setStatus('검색어를 입력해주세요.', true);
+        return;
+      }
+
+      setLoading(true);
+      document.getElementById('results').innerHTML = '';
+
+      try {
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=ko-KR&include_adult=false`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        setLoading(false);
+
+        if (!data.results || data.results.length === 0) {
+          setStatus(`"${query}"에 대한 검색 결과가 없습니다.`, false);
+          return;
+        }
+
+        setStatus(`"${query}" 검색 결과: ${data.results.length}편`, false);
+        renderMovies(data.results);
+      } catch (err) {
+        setLoading(false);
+        if (err.message.includes('401')) {
+          setStatus('API 키가 유효하지 않습니다. 다시 확인해주세요.', true);
+        } else {
+          setStatus('오류가 발생했습니다: ' + err.message, true);
+        }
+      }
+    }
+
+    function renderMovies(movies) {
+      const container = document.getElementById('results');
+      container.innerHTML = '';
+
+      movies.forEach(movie => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => openModal(movie);
+
+        const year = movie.release_date ? movie.release_date.slice(0, 4) : '연도 미상';
+        const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+
+        const posterHTML = movie.poster_path
+          ? `<img src="${IMG_BASE}${movie.poster_path}" alt="${movie.title}" loading="lazy" />`
+          : `<div class="no-poster">포스터 없음</div>`;
+
+        card.innerHTML = `
+          ${posterHTML}
+          <div class="info">
+            <div class="title">${movie.title}</div>
+            <div class="meta">
+              <span class="year">${year}</span>
+              <span class="rating">★ ${rating}</span>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function openModal(movie) {
+      const year = movie.release_date ? movie.release_date.slice(0, 4) : '연도 미상';
+      const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+      const votes = movie.vote_count ? movie.vote_count.toLocaleString() : '0';
+      const overview = movie.overview || '줄거리 정보가 없습니다.';
+
+      const posterHTML = movie.poster_path
+        ? `<img src="${IMG_BASE}${movie.poster_path}" alt="${movie.title}" />`
+        : `<div class="no-poster-modal">포스터 없음</div>`;
+
+      document.getElementById('modal-content').innerHTML = `
+        ${posterHTML}
+        <div class="modal-body">
+          <div class="modal-title">${movie.title}</div>
+          ${movie.original_title !== movie.title
+            ? `<div class="modal-original">${movie.original_title}</div>`
+            : ''}
+          <div class="modal-meta">
+            <span class="badge">${year}</span>
+            <span class="badge rating">★ ${rating}</span>
+            <span class="badge">${votes}명 평가</span>
+            ${movie.original_language ? `<span class="badge">${movie.original_language.toUpperCase()}</span>` : ''}
+          </div>
+          <div class="overview">${overview}</div>
+        </div>
+      `;
+
+      document.getElementById('modal-overlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(e) {
+      if (e && e.target !== document.getElementById('modal-overlay') && !e.target.classList.contains('close-btn')) return;
+      document.getElementById('modal-overlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal({ target: document.getElementById('modal-overlay') });
+    });
+  </script>
+</body>
+</html>
