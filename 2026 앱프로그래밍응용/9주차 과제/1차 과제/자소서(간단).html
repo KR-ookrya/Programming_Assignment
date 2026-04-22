@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나의 첫 웹사이트</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background-color: #f5f5f5; }
+    header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+    nav { background-color: #333; padding: 10px; text-align: center; }
+    nav a { color: white; margin: 0 15px; text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    .container { padding: 20px; max-width: 900px; margin: auto; }
+    .card { background: white; padding: 20px; margin: 15px 0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .profile { text-align: center; }
+    .profile img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; }
+    footer { text-align: center; padding: 10px; background-color: #ddd; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>나의 바이브 코딩 사이트</h1>
+  <p>대학생 첫 웹페이지</p>
+</header>
+
+<nav>
+  <a href="#home">홈</a>
+  <a href="#about">자기소개</a>
+  <a href="#contact">연락</a>
+</nav>
+
+<div class="container">
+  <div class="card profile" id="home">
+    <img src="https://via.placeholder.com/150" alt="프로필 사진">
+    <h2>안녕하세요 👋</h2>
+    <p>저는 바이브 코딩을 배우고 있는 대학생입니다!</p>
+  </div>
+
+  <div class="card" id="about">
+    <h2>자기소개</h2>
+    <p>
+      이름: 홍길동 <br>
+      전공: 컴퓨터공학 <br>
+      관심 분야: 웹 개발, AI, 앱 개발 <br><br>
+      현재 HTML, CSS를 배우며 나만의 웹사이트를 만드는 중입니다.
+      앞으로 더 다양한 기능을 추가하는 것이 목표입니다 🚀
+    </p>
+  </div>
+
+  <div class="card" id="contact">
+    <h2>연락처</h2>
+    <p>Email: example@email.com</p>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 나의 웹사이트</p>
+</footer>
+
+</body>
+</html>
