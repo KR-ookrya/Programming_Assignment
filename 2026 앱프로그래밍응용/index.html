@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 자기소개서 첨삭</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">✍️</div>
+      <h1>AI 자기소개서 첨삭</h1>
+      <p class="subtitle">Claude AI가 자기소개서를 분석하고 전문적인 피드백을 제공합니다</p>
+    </header>
+
+    <main>
+      <section class="input-section card">
+        <div class="section-title-row">
+          <h2>자기소개서 입력</h2>
+          <button class="sample-btn" onclick="loadSample()" title="예시 자기소개서 불러오기">
+            📄 예시 불러오기
+          </button>
+        </div>
+
+        <div class="meta-inputs">
+          <div class="input-group">
+            <label for="jobTitle">지원 직무 <span class="optional">(선택)</span></label>
+            <input type="text" id="jobTitle" placeholder="예: 백엔드 개발자, 마케터, 디자이너" />
+          </div>
+          <div class="input-group">
+            <label for="company">지원 회사 <span class="optional">(선택)</span></label>
+            <input type="text" id="company" placeholder="예: 카카오, 삼성전자, 네이버" />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="coverLetter">자기소개서 본문</label>
+          <textarea
+            id="coverLetter"
+            placeholder="자기소개서 내용을 여기에 붙여넣으세요...&#10;&#10;(최소 50자 이상 입력해주세요)"
+            rows="14"
+          ></textarea>
+          <div class="char-count-row">
+            <span id="charWarning" class="char-warning hidden">⚠️ 권장 글자 수(1,000자)를 초과했습니다</span>
+            <span class="char-count"><span id="charCount">0</span>자 / 권장 1,000자</span>
+          </div>
+        </div>
+
+        <button id="analyzeBtn" onclick="analyze()">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-text">첨삭 시작</span>
+        </button>
+      </section>
+
+      <section id="resultSection" class="result-section card hidden">
+        <div class="result-header">
+          <h2>📋 첨삭 결과</h2>
+          <div class="result-actions">
+            <button class="copy-btn" onclick="copyResult()" title="결과 복사">📋 복사</button>
+            <button class="pdf-btn" onclick="printResult()" title="PDF로 저장">🖨️ PDF 저장</button>
+          </div>
+        </div>
+        <div id="result" class="result-content"></div>
+        <div id="cursor" class="cursor hidden"></div>
+
+        <!-- 다시 질문하기 섹션 -->
+        <div id="followupSection" class="followup-section hidden">
+          <div class="followup-title">💬 추가 질문하기</div>
+          <p class="followup-desc">첨삭 결과에 대해 더 궁금한 점을 물어보세요.</p>
+          <div class="followup-input-row">
+            <textarea
+              id="followupInput"
+              placeholder="예: 3번 항목을 좀 더 구체적으로 다시 써줘, 지원동기 부분만 다시 봐줘..."
+              rows="3"
+            ></textarea>
+          </div>
+          <button id="followupBtn" onclick="sendFollowup()">
+            <span class="btn-icon">💬</span>
+            <span class="btn-text">질문 보내기</span>
+          </button>
+
+          <div id="followupResultSection" class="followup-result hidden">
+            <div class="followup-result-header">
+              <span>🤖 AI 답변</span>
+              <button class="copy-btn small" onclick="copyFollowup()">📋 복사</button>
+            </div>
+            <div id="followupResult" class="result-content"></div>
+            <div id="followupCursor" class="cursor hidden"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Powered by <strong>Claude Opus 4.7</strong> · Anthropic AI</p>
+    </footer>
+  </div>
+
+  <!-- 인쇄용 숨겨진 영역 -->
+  <div id="printArea" class="print-only"></div>
+
+  <script>
+    const CHAR_LIMIT = 1000;
+    const textarea = document.getElementById('coverLetter');
+    const charCountEl = document.getElementById('charCount');
+    const charWarningEl = document.getElementById('charWarning');
+
+    // 글자 수 카운트 + 경고
+    textarea.addEventListener('input', () => {
+      const len = textarea.value.length;
+      charCountEl.textContent = len.toLocaleString();
+      if (len > CHAR_LIMIT) {
+        charCountEl.parentElement.classList.add('over-limit');
+        charWarningEl.classList.remove('hidden');
+      } else {
+        charCountEl.parentElement.classList.remove('over-limit');
+        charWarningEl.classList.add('hidden');
+      }
+    });
+
+    marked.setOptions({ breaks: true, gfm: true });
+
+    let fullText = '';
+    let followupFullText = '';
+
+    // 예시 자기소개서 불러오기
+    function loadSample() {
+      const samples = [
+        {
+          jobTitle: '백엔드 개발자',
+          company: '카카오',
+          text: `저는 평소 문제를 논리적으로 분석하고 해결하는 것을 좋아합니다. 대학교 3학년 때 처음 프로그래밍을 접하게 되었고, 그 이후로 꾸준히 공부해왔습니다.
+
+학교 프로젝트에서 팀원들과 함께 웹 서비스를 개발한 경험이 있습니다. 저는 백엔드 부분을 담당했으며, Java와 Spring Boot를 사용했습니다. 개발 과정에서 여러 어려움이 있었지만, 팀원들과 소통하며 잘 해결했습니다.
+
+카카오는 국내 최고의 IT 기업 중 하나로, 저는 이곳에서 성장하고 싶습니다. 입사 후에는 열심히 배우고 회사에 기여하는 개발자가 되겠습니다. 저의 성실함과 열정으로 반드시 좋은 결과를 만들어 낼 자신이 있습니다.`
+        },
+        {
+          jobTitle: '마케터',
+          company: '네이버',
+          text: `저는 사람들과 소통하는 것을 즐기며, 트렌드에 민감한 편입니다. 대학에서 경영학을 전공하면서 마케팅 관련 수업을 열심히 들었습니다.
+
+인스타그램 개인 계정을 운영하면서 콘텐츠 기획과 홍보에 관심을 갖게 되었습니다. 팔로워 수를 500명에서 2,000명으로 늘린 경험이 있습니다. 이 과정에서 타겟 분석과 콘텐츠 전략의 중요성을 느꼈습니다.
+
+네이버에 입사하여 디지털 마케팅 역량을 키우고 싶습니다. 항상 공부하고 노력하는 자세로 회사 발전에 도움이 되는 마케터가 되겠습니다.`
+        }
+      ];
+
+      const sample = samples[Math.floor(Math.random() * samples.length)];
+      document.getElementById('jobTitle').value = sample.jobTitle;
+      document.getElementById('company').value = sample.company;
+      textarea.value = sample.text;
+      textarea.dispatchEvent(new Event('input'));
+      showToast('예시 자기소개서를 불러왔습니다.');
+    }
+
+    async function analyze() {
+      const text = textarea.value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+
+      if (text.length < 50) {
+        showToast('자기소개서를 최소 50자 이상 입력해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('analyzeBtn');
+      const resultSection = document.getElementById('resultSection');
+      const resultEl = document.getElementById('result');
+      const cursor = document.getElementById('cursor');
+      const followupSection = document.getElementById('followupSection');
+      const followupResultSection = document.getElementById('followupResultSection');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-icon spinning">⏳</span><span class="btn-text">분석 중...</span>';
+
+      resultSection.classList.remove('hidden');
+      followupSection.classList.add('hidden');
+      followupResultSection.classList.add('hidden');
+      resultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      cursor.classList.add('hidden');
+      fullText = '';
+
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, jobTitle, company }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        resultEl.innerHTML = '';
+        cursor.classList.remove('hidden');
+
+        await readStream(response, (chunk) => {
+          fullText += chunk;
+          resultEl.innerHTML = marked.parse(fullText);
+        });
+
+        cursor.classList.add('hidden');
+        followupSection.classList.remove('hidden');
+      } catch (err) {
+        resultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        cursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">🔍</span><span class="btn-text">다시 첨삭하기</span>';
+      }
+    }
+
+    async function sendFollowup() {
+      const question = document.getElementById('followupInput').value.trim();
+      if (question.length < 5) {
+        showToast('질문 내용을 5자 이상 입력해주세요.');
+        return;
+      }
+
+      const originalText = textarea.value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+
+      const btn = document.getElementById('followupBtn');
+      const followupResultSection = document.getElementById('followupResultSection');
+      const followupResultEl = document.getElementById('followupResult');
+      const followupCursor = document.getElementById('followupCursor');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-icon spinning">⏳</span><span class="btn-text">답변 중...</span>';
+
+      followupResultSection.classList.remove('hidden');
+      followupResultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      followupCursor.classList.add('hidden');
+      followupFullText = '';
+
+      followupResultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/followup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalText, jobTitle, company, analysisResult: fullText, question }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        followupResultEl.innerHTML = '';
+        followupCursor.classList.remove('hidden');
+
+        await readStream(response, (chunk) => {
+          followupFullText += chunk;
+          followupResultEl.innerHTML = marked.parse(followupFullText);
+        });
+
+        followupCursor.classList.add('hidden');
+      } catch (err) {
+        followupResultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        followupCursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">💬</span><span class="btn-text">질문 보내기</span>';
+      }
+    }
+
+    // SSE 스트림 공통 읽기 함수
+    async function readStream(response, onChunk) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6);
+          if (payload === '[DONE]') return;
+          try {
+            const { text: chunk, error } = JSON.parse(payload);
+            if (error) throw new Error(error);
+            if (chunk) onChunk(chunk);
+          } catch (e) {
+            if (e.message !== 'Unexpected end of JSON input') throw e;
+          }
+        }
+      }
+    }
+
+    // PDF 저장
+    function printResult() {
+      if (!fullText) return;
+      const printArea = document.getElementById('printArea');
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const meta = [jobTitle && `직무: ${jobTitle}`, company && `회사: ${company}`].filter(Boolean).join(' | ');
+
+      printArea.innerHTML = `
+        <div class="print-header">
+          <h1>AI 자기소개서 첨삭 결과</h1>
+          ${meta ? `<p class="print-meta">${meta}</p>` : ''}
+          <p class="print-date">생성일: ${new Date().toLocaleDateString('ko-KR')}</p>
+        </div>
+        ${marked.parse(fullText)}
+      `;
+      window.print();
+    }
+
+    function copyResult() {
+      if (!fullText) return;
+      navigator.clipboard.writeText(fullText).then(() => showToast('결과가 클립보드에 복사되었습니다.'));
+    }
+
+    function copyFollowup() {
+      if (!followupFullText) return;
+      navigator.clipboard.writeText(followupFullText).then(() => showToast('답변이 클립보드에 복사되었습니다.'));
+    }
+
+    function showToast(message) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
+    });
+
+    document.getElementById('followupInput').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendFollowup();
+    });
+  </script>
+</body>
+</html>
