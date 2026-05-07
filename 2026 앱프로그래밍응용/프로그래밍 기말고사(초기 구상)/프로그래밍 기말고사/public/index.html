@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 자기소개서 첨삭</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">✍️</div>
+      <h1>AI 자기소개서 첨삭</h1>
+      <p class="subtitle">Claude AI가 자기소개서를 분석하고 전문적인 피드백을 제공합니다</p>
+    </header>
+
+    <main>
+      <section class="input-section card">
+        <h2>자기소개서 입력</h2>
+
+        <div class="meta-inputs">
+          <div class="input-group">
+            <label for="jobTitle">지원 직무 <span class="optional">(선택)</span></label>
+            <input type="text" id="jobTitle" placeholder="예: 백엔드 개발자, 마케터, 디자이너" />
+          </div>
+          <div class="input-group">
+            <label for="company">지원 회사 <span class="optional">(선택)</span></label>
+            <input type="text" id="company" placeholder="예: 카카오, 삼성전자, 네이버" />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="coverLetter">자기소개서 본문</label>
+          <textarea
+            id="coverLetter"
+            placeholder="자기소개서 내용을 여기에 붙여넣으세요...&#10;&#10;(최소 50자 이상 입력해주세요)"
+            rows="14"
+          ></textarea>
+          <div class="char-count"><span id="charCount">0</span>자</div>
+        </div>
+
+        <button id="analyzeBtn" onclick="analyze()">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-text">첨삭 시작</span>
+        </button>
+      </section>
+
+      <section id="resultSection" class="result-section card hidden">
+        <div class="result-header">
+          <h2>📋 첨삭 결과</h2>
+          <button class="copy-btn" onclick="copyResult()" title="결과 복사">
+            📋 복사
+          </button>
+        </div>
+        <div id="result" class="result-content"></div>
+        <div id="cursor" class="cursor hidden"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Powered by <strong>Claude Opus 4.7</strong> · Anthropic AI</p>
+    </footer>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('coverLetter');
+    const charCountEl = document.getElementById('charCount');
+
+    textarea.addEventListener('input', () => {
+      charCountEl.textContent = textarea.value.length;
+    });
+
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+    });
+
+    let fullText = '';
+
+    async function analyze() {
+      const text = textarea.value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+
+      if (text.length < 50) {
+        showToast('자기소개서를 최소 50자 이상 입력해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('analyzeBtn');
+      const resultSection = document.getElementById('resultSection');
+      const resultEl = document.getElementById('result');
+      const cursor = document.getElementById('cursor');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-icon spinning">⏳</span><span class="btn-text">분석 중...</span>';
+
+      resultSection.classList.remove('hidden');
+      resultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      cursor.classList.add('hidden');
+      fullText = '';
+
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, jobTitle, company }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        resultEl.innerHTML = '';
+        cursor.classList.remove('hidden');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const payload = line.slice(6);
+            if (payload === '[DONE]') {
+              cursor.classList.add('hidden');
+              break;
+            }
+            try {
+              const { text: chunk, error } = JSON.parse(payload);
+              if (error) throw new Error(error);
+              if (chunk) {
+                fullText += chunk;
+                resultEl.innerHTML = marked.parse(fullText);
+              }
+            } catch (e) {
+              if (e.message !== 'Unexpected end of JSON input') {
+                throw e;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        resultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        cursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">🔍</span><span class="btn-text">다시 첨삭하기</span>';
+      }
+    }
+
+    function copyResult() {
+      if (!fullText) return;
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast('결과가 클립보드에 복사되었습니다.');
+      });
+    }
+
+    function showToast(message) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
+    });
+  </script>
+</body>
+</html>
