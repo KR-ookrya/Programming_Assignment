@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 자기소개서 첨삭</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <script>
+    (function() {
+      const t = localStorage.getItem('theme');
+      if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+  <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()" title="다크 모드 전환">🌙</button>
+  <div class="container">
+    <header>
+      <div class="logo">✍️</div>
+      <h1>AI 자기소개서 첨삭</h1>
+      <p class="subtitle">Claude AI가 자기소개서를 분석하고 전문적인 피드백을 제공합니다</p>
+    </header>
+
+    <main>
+      <!-- 히스토리 섹션 -->
+      <section id="historySection" class="history-section card hidden">
+        <div class="section-title-row">
+          <h2>📚 첨삭 히스토리</h2>
+          <button class="sample-btn danger-btn" onclick="clearHistory()">🗑️ 전체 삭제</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+
+      <!-- 입력 섹션 -->
+      <section class="input-section card">
+        <div class="section-title-row">
+          <h2>자기소개서 입력</h2>
+          <div class="title-actions">
+            <button class="history-btn" onclick="toggleHistory()" title="첨삭 히스토리">
+              📚 <span id="historyBadge" class="history-badge hidden">0</span>히스토리
+            </button>
+            <button class="sample-btn" onclick="document.getElementById('fileInput').click()" title="TXT 파일 업로드">
+              📁 파일 업로드
+            </button>
+            <button class="sample-btn" onclick="loadSample()" title="예시 자기소개서 불러오기">
+              📄 예시 불러오기
+            </button>
+          </div>
+        </div>
+
+        <div class="meta-inputs">
+          <div class="input-group">
+            <label for="jobTitle">지원 직무 <span class="optional">(선택)</span></label>
+            <input type="text" id="jobTitle" placeholder="예: 백엔드 개발자, 마케터, 디자이너" />
+          </div>
+          <div class="input-group">
+            <label for="company">지원 회사 <span class="optional">(선택)</span></label>
+            <input type="text" id="company" placeholder="예: 카카오, 삼성전자, 네이버" />
+          </div>
+        </div>
+
+        <!-- 항목 선택 -->
+        <div class="input-group section-type-group">
+          <label for="sectionType">첨삭 항목 <span class="optional">(선택)</span></label>
+          <select id="sectionType" class="section-type-select">
+            <option value="전체">전체 첨삭 (모든 항목 종합 분석)</option>
+            <option value="지원동기">지원동기</option>
+            <option value="성장과정">성장과정</option>
+            <option value="직무역량/경험">직무역량 / 경험</option>
+            <option value="입사 후 포부">입사 후 포부</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="coverLetter">자기소개서 본문</label>
+          <textarea
+            id="coverLetter"
+            placeholder="자기소개서 내용을 여기에 붙여넣으세요...&#10;&#10;(최소 50자 이상 입력해주세요)"
+            rows="14"
+          ></textarea>
+          <div class="char-count-row">
+            <span id="charWarning" class="char-warning hidden">⚠️ 권장 글자 수(1,000자)를 초과했습니다</span>
+            <span class="char-count"><span id="charCount">0</span>자 / 권장 1,000자</span>
+          </div>
+        </div>
+
+        <button id="analyzeBtn" onclick="analyze()">
+          <span class="btn-icon">🔍</span>
+          <span class="btn-text">첨삭 시작</span>
+        </button>
+      </section>
+
+      <!-- 결과 섹션 -->
+      <section id="resultSection" class="result-section card hidden">
+        <div class="result-header">
+          <h2>📋 첨삭 결과</h2>
+          <div class="result-actions">
+            <button class="copy-btn" onclick="copyResult()" title="결과 복사">📋 복사</button>
+            <button class="interview-btn" id="interviewBtn" onclick="startInterview()" title="면접 예상 질문 생성">🎯 면접 질문</button>
+            <button class="translate-btn" id="translateBtn" onclick="startTranslate()" title="영문 번역">🌐 영문 번역</button>
+            <button class="pdf-btn" onclick="printResult()" title="PDF로 저장">🖨️ PDF 저장</button>
+          </div>
+        </div>
+        <div id="result" class="result-content"></div>
+        <div id="cursor" class="cursor hidden"></div>
+
+        <!-- 영문 번역 섹션 -->
+        <div id="translateSection" class="translate-section hidden">
+          <div class="followup-title">🌐 영문 번역</div>
+          <p class="followup-desc">첨삭된 자기소개서(5번 항목)를 영어로 번역합니다.</p>
+          <div id="translateResultSection" class="followup-result hidden">
+            <div class="followup-result-header">
+              <span>🤖 English Version</span>
+              <button class="copy-btn small" onclick="copyTranslate()">📋 복사</button>
+            </div>
+            <div id="translateResult" class="result-content"></div>
+            <div id="translateCursor" class="cursor hidden"></div>
+          </div>
+        </div>
+
+        <!-- 면접 예상 질문 섹션 -->
+        <div id="interviewSection" class="interview-section hidden">
+          <div class="followup-title">🎯 면접 예상 질문</div>
+          <p class="followup-desc">자기소개서 기반으로 예상 면접 질문 10개와 답변 팁을 제공합니다.</p>
+          <div id="interviewResultSection" class="followup-result hidden">
+            <div class="followup-result-header">
+              <span>🤖 예상 질문 목록</span>
+              <button class="copy-btn small" onclick="copyInterview()">📋 복사</button>
+            </div>
+            <div id="interviewResult" class="result-content"></div>
+            <div id="interviewCursor" class="cursor hidden"></div>
+          </div>
+        </div>
+
+        <!-- 추가 질문 섹션 -->
+        <div id="followupSection" class="followup-section hidden">
+          <div class="followup-title">💬 추가 질문하기</div>
+          <p class="followup-desc">첨삭 결과에 대해 더 궁금한 점을 물어보세요.</p>
+          <div class="followup-input-row">
+            <textarea
+              id="followupInput"
+              placeholder="예: 3번 항목을 좀 더 구체적으로 다시 써줘, 지원동기 부분만 다시 봐줘..."
+              rows="3"
+            ></textarea>
+          </div>
+          <button id="followupBtn" onclick="sendFollowup()">
+            <span class="btn-icon">💬</span>
+            <span class="btn-text">질문 보내기</span>
+          </button>
+
+          <div id="followupResultSection" class="followup-result hidden">
+            <div class="followup-result-header">
+              <span>🤖 AI 답변</span>
+              <button class="copy-btn small" onclick="copyFollowup()">📋 복사</button>
+            </div>
+            <div id="followupResult" class="result-content"></div>
+            <div id="followupCursor" class="cursor hidden"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Powered by <strong>Claude Opus 4.7</strong> · Anthropic AI</p>
+    </footer>
+  </div>
+
+  <input type="file" id="fileInput" accept=".txt" class="hidden" />
+  <!-- 인쇄용 숨겨진 영역 -->
+  <div id="printArea" class="print-only"></div>
+
+  <script>
+    const CHAR_LIMIT = 1000;
+    const HISTORY_KEY = 'ai_coverLetter_history';
+    const MAX_HISTORY = 10;
+    const textarea = document.getElementById('coverLetter');
+    const charCountEl = document.getElementById('charCount');
+    const charWarningEl = document.getElementById('charWarning');
+
+    let fullText = '';
+    let followupFullText = '';
+    let translateFullText = '';
+    let interviewFullText = '';
+    let historyVisible = false;
+
+    // 글자 수 카운트 + 경고
+    textarea.addEventListener('input', () => {
+      const len = textarea.value.length;
+      charCountEl.textContent = len.toLocaleString();
+      if (len > CHAR_LIMIT) {
+        charCountEl.parentElement.classList.add('over-limit');
+        charWarningEl.classList.remove('hidden');
+      } else {
+        charCountEl.parentElement.classList.remove('over-limit');
+        charWarningEl.classList.add('hidden');
+      }
+    });
+
+    marked.setOptions({ breaks: true, gfm: true });
+
+    // ========== 히스토리 ==========
+    function getHistories() {
+      try {
+        return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      } catch { return []; }
+    }
+
+    function saveToHistory({ text, jobTitle, company, sectionType, result }) {
+      const histories = getHistories();
+      const item = {
+        id: Date.now(),
+        date: new Date().toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        jobTitle: jobTitle || '',
+        company: company || '',
+        sectionType: sectionType || '전체',
+        text,
+        preview: text.slice(0, 60) + (text.length > 60 ? '...' : ''),
+        result,
+      };
+      histories.unshift(item);
+      if (histories.length > MAX_HISTORY) histories.pop();
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(histories));
+      renderHistory();
+      updateHistoryBadge();
+    }
+
+    function deleteFromHistory(id) {
+      const histories = getHistories().filter(h => h.id !== id);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(histories));
+      renderHistory();
+      updateHistoryBadge();
+      showToast('히스토리 항목이 삭제되었습니다.');
+    }
+
+    function clearHistory() {
+      if (!confirm('히스토리를 전체 삭제하시겠습니까?')) return;
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+      updateHistoryBadge();
+      showToast('히스토리가 초기화되었습니다.');
+    }
+
+    function toggleHistory() {
+      const histories = getHistories();
+      if (!historyVisible && histories.length === 0) {
+        showToast('저장된 히스토리가 없습니다.');
+        return;
+      }
+      historyVisible = !historyVisible;
+      const historySection = document.getElementById('historySection');
+      if (historyVisible) {
+        renderHistory();
+        historySection.classList.remove('hidden');
+        historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        historySection.classList.add('hidden');
+      }
+    }
+
+    function updateHistoryBadge() {
+      const count = getHistories().length;
+      const badge = document.getElementById('historyBadge');
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function loadFromHistory(id) {
+      const item = getHistories().find(h => h.id === id);
+      if (!item) return;
+
+      document.getElementById('jobTitle').value = item.jobTitle;
+      document.getElementById('company').value = item.company;
+      document.getElementById('sectionType').value = item.sectionType;
+      textarea.value = item.text;
+      textarea.dispatchEvent(new Event('input'));
+
+      fullText = item.result;
+      translateFullText = '';
+      const resultSection = document.getElementById('resultSection');
+      const resultEl = document.getElementById('result');
+      resultSection.classList.remove('hidden');
+      resultEl.innerHTML = marked.parse(fullText);
+      document.getElementById('cursor').classList.add('hidden');
+      document.getElementById('followupSection').classList.remove('hidden');
+      document.getElementById('translateSection').classList.remove('hidden');
+      document.getElementById('interviewSection').classList.remove('hidden');
+      document.getElementById('translateResultSection').classList.add('hidden');
+      document.getElementById('followupResultSection').classList.add('hidden');
+      document.getElementById('interviewResultSection').classList.add('hidden');
+
+      historyVisible = false;
+      document.getElementById('historySection').classList.add('hidden');
+
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('히스토리에서 불러왔습니다.');
+    }
+
+    function renderHistory() {
+      const histories = getHistories();
+      const historySection = document.getElementById('historySection');
+      const historyList = document.getElementById('historyList');
+
+      if (histories.length === 0) {
+        historySection.classList.add('hidden');
+        historyVisible = false;
+        return;
+      }
+
+      historyList.innerHTML = histories.map(item => `
+        <div class="history-item">
+          <div class="history-meta">
+            <span class="history-date">${item.date}</span>
+            ${item.sectionType && item.sectionType !== '전체' ? `<span class="history-tag">${item.sectionType}</span>` : ''}
+            ${item.jobTitle ? `<span class="history-tag job-tag">${item.jobTitle}</span>` : ''}
+            ${item.company ? `<span class="history-company">${item.company}</span>` : ''}
+          </div>
+          <div class="history-preview">${item.preview}</div>
+          <div class="history-actions">
+            <button class="history-load-btn" onclick="loadFromHistory(${item.id})">불러오기</button>
+            <button class="history-delete-btn" onclick="deleteFromHistory(${item.id})">삭제</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ========== 분석 ==========
+    async function analyze() {
+      const text = textarea.value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const sectionType = document.getElementById('sectionType').value;
+
+      if (text.length < 50) {
+        showToast('자기소개서를 최소 50자 이상 입력해주세요.');
+        return;
+      }
+
+      const btn = document.getElementById('analyzeBtn');
+      const resultSection = document.getElementById('resultSection');
+      const resultEl = document.getElementById('result');
+      const cursor = document.getElementById('cursor');
+      const followupSection = document.getElementById('followupSection');
+      const followupResultSection = document.getElementById('followupResultSection');
+      const translateSection = document.getElementById('translateSection');
+      const translateResultSection = document.getElementById('translateResultSection');
+      const interviewSection = document.getElementById('interviewSection');
+      const interviewResultSection = document.getElementById('interviewResultSection');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-icon spinning">⏳</span><span class="btn-text">분석 중...</span>';
+
+      resultSection.classList.remove('hidden');
+      followupSection.classList.add('hidden');
+      followupResultSection.classList.add('hidden');
+      translateSection.classList.add('hidden');
+      translateResultSection.classList.add('hidden');
+      interviewSection.classList.add('hidden');
+      interviewResultSection.classList.add('hidden');
+      resultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      cursor.classList.add('hidden');
+      fullText = '';
+      translateFullText = '';
+
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, jobTitle, company, sectionType }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        resultEl.innerHTML = '';
+        cursor.classList.remove('hidden');
+
+        await readStream(response, (chunk) => {
+          fullText += chunk;
+          resultEl.innerHTML = marked.parse(fullText);
+        });
+
+        cursor.classList.add('hidden');
+        followupSection.classList.remove('hidden');
+        translateSection.classList.remove('hidden');
+        interviewSection.classList.remove('hidden');
+
+        saveToHistory({ text, jobTitle, company, sectionType, result: fullText });
+      } catch (err) {
+        resultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        cursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">🔍</span><span class="btn-text">다시 첨삭하기</span>';
+      }
+    }
+
+    // ========== 영문 번역 ==========
+    async function startTranslate() {
+      if (!fullText) return;
+
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+
+      const btn = document.getElementById('translateBtn');
+      const translateResultSection = document.getElementById('translateResultSection');
+      const translateResultEl = document.getElementById('translateResult');
+      const translateCursor = document.getElementById('translateCursor');
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 번역 중...';
+
+      translateResultSection.classList.remove('hidden');
+      translateResultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      translateCursor.classList.add('hidden');
+      translateFullText = '';
+
+      translateResultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysisResult: fullText, jobTitle, company }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        translateResultEl.innerHTML = '';
+        translateCursor.classList.remove('hidden');
+
+        await readStream(response, (chunk) => {
+          translateFullText += chunk;
+          translateResultEl.innerHTML = marked.parse(translateFullText);
+        });
+
+        translateCursor.classList.add('hidden');
+      } catch (err) {
+        translateResultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        translateCursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🌐 영문 번역';
+      }
+    }
+
+    // ========== 추가 질문 ==========
+    async function sendFollowup() {
+      const question = document.getElementById('followupInput').value.trim();
+      if (question.length < 5) {
+        showToast('질문 내용을 5자 이상 입력해주세요.');
+        return;
+      }
+
+      const originalText = textarea.value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const sectionType = document.getElementById('sectionType').value;
+
+      const btn = document.getElementById('followupBtn');
+      const followupResultSection = document.getElementById('followupResultSection');
+      const followupResultEl = document.getElementById('followupResult');
+      const followupCursor = document.getElementById('followupCursor');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-icon spinning">⏳</span><span class="btn-text">답변 중...</span>';
+
+      followupResultSection.classList.remove('hidden');
+      followupResultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      followupCursor.classList.add('hidden');
+      followupFullText = '';
+
+      followupResultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/followup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalText, jobTitle, company, sectionType, analysisResult: fullText, question }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        followupResultEl.innerHTML = '';
+        followupCursor.classList.remove('hidden');
+
+        await readStream(response, (chunk) => {
+          followupFullText += chunk;
+          followupResultEl.innerHTML = marked.parse(followupFullText);
+        });
+
+        followupCursor.classList.add('hidden');
+      } catch (err) {
+        followupResultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        followupCursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">💬</span><span class="btn-text">질문 보내기</span>';
+      }
+    }
+
+    // ========== SSE 스트림 공통 읽기 ==========
+    async function readStream(response, onChunk) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6);
+          if (payload === '[DONE]') return;
+          try {
+            const { text: chunk, error } = JSON.parse(payload);
+            if (error) throw new Error(error);
+            if (chunk) onChunk(chunk);
+          } catch (e) {
+            if (e.message !== 'Unexpected end of JSON input') throw e;
+          }
+        }
+      }
+    }
+
+    // ========== 예시 불러오기 ==========
+    function loadSample() {
+      const samples = [
+        {
+          jobTitle: '백엔드 개발자',
+          company: '카카오',
+          sectionType: '전체',
+          text: `저는 평소 문제를 논리적으로 분석하고 해결하는 것을 좋아합니다. 대학교 3학년 때 처음 프로그래밍을 접하게 되었고, 그 이후로 꾸준히 공부해왔습니다.
+
+학교 프로젝트에서 팀원들과 함께 웹 서비스를 개발한 경험이 있습니다. 저는 백엔드 부분을 담당했으며, Java와 Spring Boot를 사용했습니다. 개발 과정에서 여러 어려움이 있었지만, 팀원들과 소통하며 잘 해결했습니다.
+
+카카오는 국내 최고의 IT 기업 중 하나로, 저는 이곳에서 성장하고 싶습니다. 입사 후에는 열심히 배우고 회사에 기여하는 개발자가 되겠습니다. 저의 성실함과 열정으로 반드시 좋은 결과를 만들어 낼 자신이 있습니다.`
+        },
+        {
+          jobTitle: '마케터',
+          company: '네이버',
+          sectionType: '전체',
+          text: `저는 사람들과 소통하는 것을 즐기며, 트렌드에 민감한 편입니다. 대학에서 경영학을 전공하면서 마케팅 관련 수업을 열심히 들었습니다.
+
+인스타그램 개인 계정을 운영하면서 콘텐츠 기획과 홍보에 관심을 갖게 되었습니다. 팔로워 수를 500명에서 2,000명으로 늘린 경험이 있습니다. 이 과정에서 타겟 분석과 콘텐츠 전략의 중요성을 느꼈습니다.
+
+네이버에 입사하여 디지털 마케팅 역량을 키우고 싶습니다. 항상 공부하고 노력하는 자세로 회사 발전에 도움이 되는 마케터가 되겠습니다.`
+        }
+      ];
+
+      const sample = samples[Math.floor(Math.random() * samples.length)];
+      document.getElementById('jobTitle').value = sample.jobTitle;
+      document.getElementById('company').value = sample.company;
+      document.getElementById('sectionType').value = sample.sectionType;
+      textarea.value = sample.text;
+      textarea.dispatchEvent(new Event('input'));
+      showToast('예시 자기소개서를 불러왔습니다.');
+    }
+
+    // ========== PDF 저장 ==========
+    function printResult() {
+      if (!fullText) return;
+      const printArea = document.getElementById('printArea');
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const sectionType = document.getElementById('sectionType').value;
+      const metaParts = [
+        jobTitle && `직무: ${jobTitle}`,
+        company && `회사: ${company}`,
+        sectionType !== '전체' && `항목: ${sectionType}`,
+      ].filter(Boolean);
+      const meta = metaParts.join(' | ');
+
+      printArea.innerHTML = `
+        <div class="print-header">
+          <h1>AI 자기소개서 첨삭 결과</h1>
+          ${meta ? `<p class="print-meta">${meta}</p>` : ''}
+          <p class="print-date">생성일: ${new Date().toLocaleDateString('ko-KR')}</p>
+        </div>
+        ${marked.parse(fullText)}
+      `;
+      window.print();
+    }
+
+    // ========== 복사 ==========
+    function copyResult() {
+      if (!fullText) return;
+      navigator.clipboard.writeText(fullText).then(() => showToast('결과가 클립보드에 복사되었습니다.'));
+    }
+
+    function copyFollowup() {
+      if (!followupFullText) return;
+      navigator.clipboard.writeText(followupFullText).then(() => showToast('답변이 클립보드에 복사되었습니다.'));
+    }
+
+    function copyTranslate() {
+      if (!translateFullText) return;
+      navigator.clipboard.writeText(translateFullText).then(() => showToast('번역본이 클립보드에 복사되었습니다.'));
+    }
+
+    // ========== 토스트 ==========
+    function showToast(message) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    // ========== 면접 예상 질문 ==========
+    async function startInterview() {
+      if (!fullText) return;
+
+      const originalText = textarea.value.trim();
+      const jobTitle = document.getElementById('jobTitle').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const sectionType = document.getElementById('sectionType').value;
+
+      const btn = document.getElementById('interviewBtn');
+      const interviewResultSection = document.getElementById('interviewResultSection');
+      const interviewResultEl = document.getElementById('interviewResult');
+      const interviewCursor = document.getElementById('interviewCursor');
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 생성 중...';
+
+      interviewResultSection.classList.remove('hidden');
+      interviewResultEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+      interviewCursor.classList.add('hidden');
+      interviewFullText = '';
+
+      interviewResultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      try {
+        const response = await fetch('/api/interview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalText, jobTitle, company, sectionType, analysisResult: fullText }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || '서버 오류가 발생했습니다.');
+        }
+
+        interviewResultEl.innerHTML = '';
+        interviewCursor.classList.remove('hidden');
+
+        await readStream(response, (chunk) => {
+          interviewFullText += chunk;
+          interviewResultEl.innerHTML = marked.parse(interviewFullText);
+        });
+
+        interviewCursor.classList.add('hidden');
+      } catch (err) {
+        interviewResultEl.innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+        interviewCursor.classList.add('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🎯 면접 질문';
+      }
+    }
+
+    function copyInterview() {
+      if (!interviewFullText) return;
+      navigator.clipboard.writeText(interviewFullText).then(() => showToast('면접 질문이 클립보드에 복사되었습니다.'));
+    }
+
+    // ========== 파일 업로드 ==========
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        textarea.value = evt.target.result;
+        textarea.dispatchEvent(new Event('input'));
+        showToast(`"${file.name}" 파일을 불러왔습니다.`);
+      };
+      reader.readAsText(file, 'UTF-8');
+      e.target.value = '';
+    });
+
+    textarea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      textarea.classList.add('drag-over');
+    });
+    textarea.addEventListener('dragleave', () => textarea.classList.remove('drag-over'));
+    textarea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      textarea.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (!file.name.endsWith('.txt') && file.type !== 'text/plain') {
+        showToast('txt 파일만 지원합니다.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        textarea.value = evt.target.result;
+        textarea.dispatchEvent(new Event('input'));
+        showToast(`"${file.name}" 파일을 불러왔습니다.`);
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    // ========== 다크 모드 ==========
+    function toggleDarkMode() {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const next = isDark ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.getElementById('darkModeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+
+    // ========== 단축키 ==========
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
+    });
+
+    document.getElementById('followupInput').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendFollowup();
+    });
+
+    // ========== 초기화 ==========
+    updateHistoryBadge();
+    if (document.body.getAttribute('data-theme') === 'dark') {
+      document.getElementById('darkModeBtn').textContent = '☀️';
+    }
+  </script>
+</body>
+</html>
